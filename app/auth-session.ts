@@ -1,4 +1,5 @@
 import { env } from "cloudflare:workers";
+import { BASE_PATH } from "./base-path";
 
 export type LedgerRole = "zcy" | "django";
 
@@ -44,11 +45,11 @@ export async function createSessionCookie(role: LedgerRole) {
   const payload = `${role}.${expires}`;
   const value = `${payload}.${await signature(payload)}`;
   const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
-  return `${COOKIE_NAME}=${encodeURIComponent(value)}; Path=/; Max-Age=${SESSION_SECONDS}; HttpOnly; SameSite=Lax${secure}`;
+  return `${COOKIE_NAME}=${encodeURIComponent(value)}; Path=${BASE_PATH}; Max-Age=${SESSION_SECONDS}; HttpOnly; SameSite=Lax${secure}`;
 }
 
 export function clearSessionCookie() {
-  return `${COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`;
+  return `${COOKIE_NAME}=; Path=${BASE_PATH}; Max-Age=0; HttpOnly; SameSite=Lax`;
 }
 
 export async function getSessionRole(request: Request): Promise<LedgerRole | null> {

@@ -3,7 +3,6 @@ import { ensureLedgerSchema, getDb } from "../../../db";
 import { ledgerEntries } from "../../../db/schema";
 import { getSessionRole } from "../../auth-session";
 
-type Role = "zcy" | "django";
 type EntryKind =
   | "income"
   | "large_expense"

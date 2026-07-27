@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { withBasePath } from "./base-path";
 
 type Role = "zcy" | "django";
 type Kind =
@@ -115,7 +116,7 @@ export default function LedgerApp() {
     setLoading(true);
     setNotice("");
     try {
-      const response = await fetch("/api/ledger");
+      const response = await fetch(withBasePath("/api/ledger"));
       const data = (await response.json()) as { entries?: Entry[]; role?: Role; error?: string };
       if (!response.ok) throw new Error(data.error || "读取账本失败");
       setEntries(data.entries ?? []);
@@ -130,7 +131,7 @@ export default function LedgerApp() {
   useEffect(() => {
     async function checkSession() {
       try {
-        const response = await fetch("/api/session");
+        const response = await fetch(withBasePath("/api/session"));
         if (!response.ok) return;
         const data = (await response.json()) as { role: Role };
         setRole(data.role);
@@ -141,7 +142,6 @@ export default function LedgerApp() {
       }
     }
     void checkSession();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const cycle = currentCycle();
@@ -193,7 +193,7 @@ export default function LedgerApp() {
     const payload = Object.fromEntries(form.entries());
     setSaving(true);
     try {
-      const response = await fetch("/api/ledger", {
+      const response = await fetch(withBasePath("/api/ledger"), {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -214,7 +214,7 @@ export default function LedgerApp() {
 
   async function removeEntry(id: number) {
     if (!window.confirm("确定删除这条记录吗？")) return;
-    const response = await fetch(`/api/ledger?id=${id}`, {
+    const response = await fetch(withBasePath(`/api/ledger?id=${id}`), {
       method: "DELETE",
     });
     if (response.ok) {
@@ -231,7 +231,7 @@ export default function LedgerApp() {
     setLoggingIn(true);
     setLoginError("");
     try {
-      const response = await fetch("/api/session", {
+      const response = await fetch(withBasePath("/api/session"), {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ role: loginRole, passphrase }),
@@ -250,7 +250,7 @@ export default function LedgerApp() {
   }
 
   async function logout() {
-    await fetch("/api/session", { method: "DELETE" });
+    await fetch(withBasePath("/api/session"), { method: "DELETE" });
     setEntries([]);
     setAuthenticated(false);
     setPassphrase("");

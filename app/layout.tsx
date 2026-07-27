@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { withBasePath } from "./base-path";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -7,7 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = requestHeaders.get("host") ?? "localhost:3000";
   const protocol = requestHeaders.get("x-forwarded-proto") ?? "https";
   const metadataBase = new URL(`${protocol}://${host}`);
-  const imageUrl = new URL("/og.png", metadataBase).toString();
+  const imageUrl = new URL(withBasePath("/og.png"), metadataBase).toString();
 
   return {
     metadataBase,

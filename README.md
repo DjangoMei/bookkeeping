@@ -2,6 +2,9 @@
 
 zcy 与 Django 共用的家庭记账网页。
 
+- 正式地址：<https://djangomei.com/bookkeeping>
+- GitHub：<https://github.com/DjangoMei/bookkeeping>
+
 ## 功能
 
 - zcy / Django 收入独立管理，工资与额外收入分开记录
