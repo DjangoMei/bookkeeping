@@ -38,3 +38,7 @@ npm run build
 ```
 
 结构化账目存储在 Cloudflare D1，数据库迁移位于 `drizzle/`。
+
+## 自动部署
+
+`main` 更新后，Mac mini 会在两分钟内主动检查、验证并部署新提交。运行方式、日志位置和排障命令见 [Mac mini 自动部署](docs/mac-mini-auto-deploy.md)。
