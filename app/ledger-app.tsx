@@ -112,36 +112,38 @@ export default function LedgerApp() {
   const [kindToAdd, setKindToAdd] = useState<Exclude<Kind, "overview">>("income");
   const today = new Date().toISOString().slice(0, 10);
 
-  async function load() {
+  async function load({
+    allowUnauthenticated = false,
+  }: { allowUnauthenticated?: boolean } = {}) {
     setLoading(true);
     setNotice("");
     try {
       const response = await fetch(withBasePath("/api/ledger"));
       const data = (await response.json()) as { entries?: Entry[]; role?: Role; error?: string };
-      if (!response.ok) throw new Error(data.error || "读取账本失败");
+      if (!response.ok) {
+        if (allowUnauthenticated && (response.status === 401 || response.status === 403)) {
+          return false;
+        }
+        throw new Error(data.error || "读取账本失败");
+      }
       setEntries(data.entries ?? []);
       if (data.role) setRole(data.role);
+      return true;
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "读取账本失败");
+      return false;
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    async function checkSession() {
-      try {
-        const response = await fetch(withBasePath("/api/session"));
-        if (!response.ok) return;
-        const data = (await response.json()) as { role: Role };
-        setRole(data.role);
-        setAuthenticated(true);
-        await load();
-      } finally {
-        setSessionChecking(false);
-      }
+    async function initialize() {
+      const hasSession = await load({ allowUnauthenticated: true });
+      setAuthenticated(hasSession);
+      setSessionChecking(false);
     }
-    void checkSession();
+    void initialize();
   }, []);
 
   const cycle = currentCycle();
@@ -260,14 +262,6 @@ export default function LedgerApp() {
   const activeMeta = active === "overview" ? null : copy[active];
   const formMeta = copy[kindToAdd];
 
-  if (sessionChecking) {
-    return (
-      <main className="login-shell">
-        <div className="login-loading">正在打开家账…</div>
-      </main>
-    );
-  }
-
   if (!authenticated) {
     return (
       <main className="login-shell">
@@ -316,9 +310,17 @@ export default function LedgerApp() {
                 value={passphrase}
               />
             </label>
-            {loginError && <div className="login-error">{loginError}</div>}
-            <button className="login-button" disabled={loggingIn} type="submit">
-              {loggingIn ? "正在进入…" : `进入 ${loginRole} 的账本`}
+            {(loginError || notice) && <div className="login-error">{loginError || notice}</div>}
+            <button
+              className="login-button"
+              disabled={loggingIn || sessionChecking}
+              type="submit"
+            >
+              {sessionChecking
+                ? "正在检查已保存的登录状态…"
+                : loggingIn
+                  ? "正在进入…"
+                  : `进入 ${loginRole} 的账本`}
             </button>
           </form>
           <footer>

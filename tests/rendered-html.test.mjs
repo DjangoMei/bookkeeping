@@ -24,3 +24,18 @@ test("keeps browser API calls and session cookies under /bookkeeping", async () 
   assert.match(client, /withBasePath\("\/api\/session"\)/);
   assert.match(auth, /Path=\$\{BASE_PATH\}/);
 });
+
+test("initializes authentication and ledger data with one request", async () => {
+  const client = await readFile(
+    new URL("app/ledger-app.tsx", projectRoot),
+    "utf8",
+  );
+
+  assert.match(client, /load\(\{ allowUnauthenticated: true \}\)/);
+  assert.doesNotMatch(
+    client,
+    /fetch\(withBasePath\("\/api\/session"\)\);/,
+  );
+  assert.doesNotMatch(client, /if \(sessionChecking\) \{/);
+  assert.match(client, /正在检查已保存的登录状态/);
+});
