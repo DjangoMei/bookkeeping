@@ -32,10 +32,7 @@ body {
 
 .login-shell {
   align-items: center;
-  background:
-    linear-gradient(90deg, var(--green) 0, var(--green) 35%, transparent 35%),
-    radial-gradient(circle at 82% 12%, rgba(195, 152, 66, 0.16), transparent 27rem),
-    var(--paper);
+  background: var(--paper);
   display: flex;
   justify-content: center;
   min-height: 100vh;
@@ -1089,9 +1086,7 @@ td small {
 
 @media (max-width: 760px) {
   .login-shell {
-    background:
-      linear-gradient(180deg, var(--green) 0, var(--green) 26%, transparent 26%),
-      var(--paper);
+    background: var(--paper);
     padding: 18px;
   }
 
