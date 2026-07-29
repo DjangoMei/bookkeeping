@@ -41,6 +41,17 @@ test("initializes authentication and ledger data with one request", async () => 
   assert.match(client, /正在检查已保存的登录状态/);
 });
 
+test("renders the overview greeting from the user's local time", async () => {
+  const client = await readFile(
+    new URL("app/ledger-app.tsx", projectRoot),
+    "utf8",
+  );
+
+  assert.match(client, /greetingForHour\(new Date\(\)\.getHours\(\)\)/);
+  assert.match(client, /activeMeta\?\.title \?\? greeting/);
+  assert.doesNotMatch(client, /activeMeta\?\.title \?\? "晚上好/);
+});
+
 test("redirects the bare base path to its canonical trailing-slash URL", async () => {
   const [viteConfig, worker] = await Promise.all([
     readFile(new URL("vite.config.ts", projectRoot), "utf8"),

@@ -10,7 +10,7 @@
     "dev:hot": "node scripts/serve-hot.mjs",
     "build": "vinext build",
     "start": "node scripts/serve-stable.mjs",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs",
+    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/time-greeting.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },
