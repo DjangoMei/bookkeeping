@@ -9,7 +9,7 @@
 3. 部署器执行 `git fetch`，没有新 commit 时立即退出。
 4. 有更新时，在临时目录执行 `npm ci`、`npm run lint` 和 `npm test`。
 5. 验证通过后，生产副本更新到 `origin/main`。
-6. `com.djangomei.bookkeeping` 重启并完成本地 HTTP 健康检查。
+6. `com.djangomei.bookkeeping` 构建并启动稳定 Worker 服务（不使用 Vite HMR），然后完成本地 HTTP 健康检查。
 
 ## Mac mini 路径
 
