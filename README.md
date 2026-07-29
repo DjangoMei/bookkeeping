@@ -19,17 +19,21 @@ zcy 与 Django 共用的家庭记账网页。
 
 需要 Node.js 22.13 或更新版本。
 
-```bash
-npm install
-npm run dev
-```
-
 复制 `.env.example` 为 `.dev.vars`，并配置：
 
 ```text
 LEDGER_PASSPHRASE=你的安全口令
 SESSION_SECRET=一段足够长的随机字符串
 ```
+
+安装依赖并启动与正式环境一致的稳定服务：
+
+```bash
+npm install
+npm run dev
+```
+
+需要前端热更新时，改用 `npm run dev:hot`。
 
 ## 构建
 
