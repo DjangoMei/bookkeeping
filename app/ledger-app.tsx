@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { withBasePath } from "./base-path";
+import { greetingForHour } from "./time-greeting";
 
 type Role = "zcy" | "django";
 type Kind =
@@ -110,6 +111,7 @@ export default function LedgerApp() {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
   const [kindToAdd, setKindToAdd] = useState<Exclude<Kind, "overview">>("income");
+  const [greeting, setGreeting] = useState("你好，账目一切清楚。");
   const today = new Date().toISOString().slice(0, 10);
 
   async function load({
@@ -144,6 +146,16 @@ export default function LedgerApp() {
       setSessionChecking(false);
     }
     void initialize();
+  }, []);
+
+  useEffect(() => {
+    function updateGreeting() {
+      setGreeting(greetingForHour(new Date().getHours()));
+    }
+
+    updateGreeting();
+    const timer = window.setInterval(updateGreeting, 60_000);
+    return () => window.clearInterval(timer);
   }, []);
 
   const cycle = currentCycle();
@@ -384,7 +396,7 @@ export default function LedgerApp() {
         <header className="topbar">
           <div>
             <p className="eyebrow">家庭财务 · 清楚一点，安心一点</p>
-            <h1>{activeMeta?.title ?? "晚上好，账目一切清楚。"}</h1>
+            <h1>{activeMeta?.title ?? greeting}</h1>
             <p className="subtitle">
               {activeMeta?.description ?? "这是你们两个人共同维护、各自独立的家庭账本。"}
             </p>
