@@ -39,3 +39,19 @@ test("initializes authentication and ledger data with one request", async () => 
   assert.doesNotMatch(client, /if \(sessionChecking\) \{/);
   assert.match(client, /正在检查已保存的登录状态/);
 });
+
+test("redirects the bare base path to its canonical trailing-slash URL", async () => {
+  const [viteConfig, worker] = await Promise.all([
+    readFile(new URL("vite.config.ts", projectRoot), "utf8"),
+    readFile(new URL("worker/index.ts", projectRoot), "utf8"),
+  ]);
+
+  assert.match(viteConfig, /name:\s*"base-path-redirect"/);
+  assert.match(viteConfig, /response\.statusCode\s*=\s*308/);
+  assert.match(
+    viteConfig,
+    /response\.setHeader\("Location", `\$\{BASE_PATH\}\/\$\{requestUrl\.search\}`\)/,
+  );
+  assert.match(worker, /if \(url\.pathname === BASE_PATH\)/);
+  assert.match(worker, /Response\.redirect\(url\.toString\(\), 308\)/);
+});
