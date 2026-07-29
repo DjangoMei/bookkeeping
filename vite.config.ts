@@ -11,6 +11,9 @@ const { d1, r2 } = hostingConfig;
 
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
+// Public fallbacks must never hot-swap modules across a deployment restart.
+// `npm run dev:hot` explicitly opts back into HMR for local development.
+const enableHotReload = process.env.BOOKKEEPING_ENABLE_HMR === "true";
 
 function basePathRedirect(): Plugin {
   return {
@@ -67,6 +70,7 @@ export default defineConfig(async () => {
   return {
     server: {
       allowedHosts: ["djangomei.com", "www.djangomei.com"],
+      hmr: enableHotReload,
       ...(isCodexSeatbeltSandbox
         ? { watch: { useFsEvents: false, usePolling: true } }
         : {}),
