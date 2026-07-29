@@ -215,29 +215,6 @@ body {
   width: 3px;
 }
 
-.login-decoration {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(5, 52px);
-  left: calc(50% + 230px);
-  opacity: 0.18;
-  position: absolute;
-  top: 15%;
-  transform: rotate(5deg);
-}
-
-.login-decoration span {
-  align-items: center;
-  border: 1px solid var(--green);
-  border-radius: 50%;
-  color: var(--green);
-  display: flex;
-  font-family: "STKaiti", "KaiTi", serif;
-  font-size: 25px;
-  height: 52px;
-  justify-content: center;
-}
-
 button,
 input,
 select,
@@ -1085,10 +1062,6 @@ td small {
 
   .login-card {
     padding: 31px 24px 26px;
-  }
-
-  .login-decoration {
-    display: none;
   }
 
   .sidebar {

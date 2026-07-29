@@ -329,9 +329,6 @@ export default function LedgerApp() {
             <span>家庭支出共同维护</span>
           </footer>
         </section>
-        <div className="login-decoration">
-          <span>收</span><span>额</span><span>孩</span><span>异</span><span>礼</span>
-        </div>
       </main>
     );
   }
