@@ -58,18 +58,22 @@ test("redirects the bare base path to its canonical trailing-slash URL", async (
 });
 
 test("serves production traffic from the built Worker instead of Vite HMR", async () => {
-  const [packageJson, stableServer] = await Promise.all([
+  const [packageJson, stableServer, hotServer, viteConfig] = await Promise.all([
     readFile(new URL("package.json", projectRoot), "utf8").then(JSON.parse),
     readFile(new URL("scripts/serve-stable.mjs", projectRoot), "utf8"),
+    readFile(new URL("scripts/serve-hot.mjs", projectRoot), "utf8"),
+    readFile(new URL("vite.config.ts", projectRoot), "utf8"),
   ]);
 
   assert.equal(packageJson.scripts.dev, "node scripts/serve-stable.mjs");
   assert.equal(packageJson.scripts.start, "node scripts/serve-stable.mjs");
-  assert.match(packageJson.scripts["dev:hot"], /vinext dev/);
+  assert.equal(packageJson.scripts["dev:hot"], "node scripts/serve-hot.mjs");
   assert.match(stableServer, /\[npmCli, "run", "build"\]/);
   assert.match(stableServer, /path\.join\("dist", "server", "wrangler\.json"\)/);
   assert.match(stableServer, /"--persist-to"/);
   assert.doesNotMatch(stableServer, /vinext dev/);
+  assert.match(hotServer, /BOOKKEEPING_ENABLE_HMR:\s*"true"/);
+  assert.match(viteConfig, /hmr:\s*enableHotReload/);
 });
 
 test("packages immutable client assets under the public base path", async () => {
