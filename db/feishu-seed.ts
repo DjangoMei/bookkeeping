@@ -26,12 +26,14 @@ const income = (
   }));
 
 const largeExpense = (
+  owner: "zcy" | "django",
+  keyPrefix: string,
   rows: Array<[string, string, number, string?]>,
 ): SeedEntry[] =>
   rows.map(([date, title, amount, category], index) => ({
-    key: `feishu-large-${String(index + 1).padStart(2, "0")}`,
+    key: `${keyPrefix}-${String(index + 1).padStart(2, "0")}`,
     kind: "large_expense",
-    owner: "family",
+    owner,
     date,
     title,
     category: category ?? "其他",
@@ -101,7 +103,7 @@ const FEISHU_ENTRIES: SeedEntry[] = [
     ["2025-02-28", "工资", 54300.78],
     ["2025-03-31", "工资＋年终奖", 238428.5],
   ]),
-  ...largeExpense([
+  ...largeExpense("zcy", "feishu-large", [
     ["2025-06-01", "lola rose项链", 2907, "首饰"],
     ["2025-06-01", "小米智能手表", 999, "数码"],
     ["2025-06-01", "电脑", 10000, "数码"],
@@ -126,6 +128,31 @@ const FEISHU_ENTRIES: SeedEntry[] = [
     ["2026-04-01", "妈生日礼物", 1233.6, "礼物"],
     ["2026-06-01", "项链", 12300, "首饰"],
     ["2026-06-01", "公司送手机", -2899, "数码"],
+  ]),
+  ...largeExpense("django", "feishu-large-django", [
+    ["2025-06-01", "电脑", 22152, "数码"],
+    ["2025-06-01", "显示器", 2499, "数码"],
+    ["2025-07-01", "大电脑回收", -2245, "数码"],
+    ["2025-07-01", "小电脑回收", -1010, "数码"],
+    ["2025-07-01", "电脑桌＋斗柜", 1700, "家居"],
+    ["2025-07-01", "耳机", 864, "数码"],
+    ["2025-09-01", "眼镜", 3400, "个人"],
+    ["2025-09-01", "liberlive吉他", 1227, "娱乐"],
+    ["2025-09-01", "红米平板", 2940, "数码"],
+    ["2025-09-01", "妈生日礼物", 1239, "礼物"],
+    ["2025-09-01", "卖了一堆设备", -3339, "数码"],
+    ["2025-09-01", "Switch 2", 3198, "娱乐"],
+    ["2025-10-01", "键盘", 480, "数码"],
+    ["2025-12-01", "路由器", 1300, "数码"],
+    ["2025-12-01", "卖AR眼镜", -1125, "数码"],
+    ["2025-12-01", "卖VR眼镜", -788, "数码"],
+    ["2025-12-01", "ITX主机", 4755, "数码"],
+    ["2026-01-01", "电脑电源", 1408, "数码"],
+    ["2026-03-01", "苹果手机", 5469, "数码"],
+    ["2026-03-01", "小折叠回收", -1940, "数码"],
+    ["2026-03-01", "显示器", 734, "数码"],
+    ["2026-04-01", "清闲工学椅", 4099, "家居"],
+    ["2026-05-01", "32寸显示器", 1199, "数码"],
   ]),
   ...childExpense([
     ["2025-05-30", "安全座椅", 780],
@@ -217,10 +244,16 @@ const FEISHU_ENTRIES: SeedEntry[] = [
 
 export async function seedFeishuEntries(db: D1Database) {
   const insert = `
-    INSERT OR IGNORE INTO ledger_entries (
+    INSERT INTO ledger_entries (
       source_key, kind, owner, entry_date, month, title, category,
       amount_cents, detail, gift_type, source, created_by_role
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'feishu', 'system')
+    ON CONFLICT(source_key) DO UPDATE SET
+      owner = excluded.owner,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE ledger_entries.kind = 'large_expense'
+      AND ledger_entries.source = 'feishu'
+      AND ledger_entries.owner = 'family'
   `;
 
   const statements = FEISHU_ENTRIES.map((entry) =>

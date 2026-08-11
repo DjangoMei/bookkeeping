@@ -53,9 +53,10 @@ test("renders the overview greeting from the user's local time", async () => {
 });
 
 test("keeps large expenses private to their assigned user", async () => {
-  const [client, ledgerRoute] = await Promise.all([
+  const [client, ledgerRoute, seed] = await Promise.all([
     readFile(new URL("app/ledger-app.tsx", projectRoot), "utf8"),
     readFile(new URL("app/api/ledger/route.ts", projectRoot), "utf8"),
+    readFile(new URL("db/feishu-seed.ts", projectRoot), "utf8"),
   ]);
 
   assert.match(
@@ -68,6 +69,10 @@ test("keeps large expenses private to their assigned user", async () => {
   assert.match(client, /entry\.owner === role/);
   assert.match(client, /entry\.owner === "family"/);
   assert.match(client, /entriesVisibleToRole/);
+  assert.match(seed, /largeExpense\("zcy", "feishu-large"/);
+  assert.match(seed, /largeExpense\("django", "feishu-large-django"/);
+  assert.match(seed, /ON CONFLICT\(source_key\) DO UPDATE SET/);
+  assert.match(seed, /ledger_entries\.owner = 'family'/);
   assert.match(client, /method: "PATCH"/);
   assert.match(
     client,
