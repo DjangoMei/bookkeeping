@@ -192,7 +192,18 @@ export default function LedgerApp() {
   const abnormalCount = entries.filter((entry) => entry.kind === "abnormal_month" && entry.entryDate.startsWith(year)).length;
   const giftsThisYear = entries.filter((entry) => entry.kind === "gift" && entry.entryDate.startsWith(year)).reduce((sum, entry) => sum + entry.amountCents, 0);
 
-  const visibleEntries = useMemo(() => active === "overview" ? entries.slice(0, 4) : entries.filter((entry) => entry.kind === active), [active, entries]);
+  const visibleEntries = useMemo(() => {
+    const entriesVisibleToRole = entries.filter(
+      (entry) =>
+        entry.kind !== "large_expense" ||
+        entry.owner === role ||
+        entry.owner === "family",
+    );
+
+    return active === "overview"
+      ? entriesVisibleToRole.slice(0, 4)
+      : entriesVisibleToRole.filter((entry) => entry.kind === active);
+  }, [active, entries, role]);
 
   function openAdd(kind?: Exclude<Kind, "overview">) {
     setKindToAdd(kind ?? (active === "overview" ? "income" : active));

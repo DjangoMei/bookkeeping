@@ -64,8 +64,10 @@ test("keeps large expenses private to their assigned user", async () => {
   );
   assert.match(ledgerRoute, /export async function PATCH\(request: Request\)/);
   assert.match(ledgerRoute, /eq\(ledgerEntries\.kind, "large_expense"\)/);
-  assert.match(client, /entry\.owner === role/);
   assert.match(client, /pendingLargeEntries/);
+  assert.match(client, /entry\.owner === role/);
+  assert.match(client, /entry\.owner === "family"/);
+  assert.match(client, /entriesVisibleToRole/);
   assert.match(client, /method: "PATCH"/);
   assert.match(
     client,
