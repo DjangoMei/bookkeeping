@@ -78,7 +78,8 @@ export async function POST(request: Request) {
       return Response.json({ error: "请完整填写日期、项目和金额" }, { status: 400 });
     }
 
-    const owner = kind === "income" ? role : "family";
+    const owner =
+      kind === "income" || kind === "large_expense" ? role : "family";
     const month =
       kind === "abnormal_month"
         ? cleanText(payload.month, 7) || entryDate.slice(0, 7)
@@ -106,6 +107,52 @@ export async function POST(request: Request) {
     return Response.json({ entry }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "保存失败";
+    return Response.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  const role = await getSessionRole(request);
+  if (!role) {
+    return Response.json({ error: "当前账号没有修改权限" }, { status: 403 });
+  }
+
+  const id = Number(new URL(request.url).searchParams.get("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return Response.json({ error: "无效的记录" }, { status: 400 });
+  }
+
+  try {
+    const payload = (await request.json()) as Record<string, unknown>;
+    const owner = cleanText(payload.owner, 10);
+    if (owner !== "zcy" && owner !== "django") {
+      return Response.json({ error: "请选择 zcy 或 Django" }, { status: 400 });
+    }
+
+    await ensureLedgerSchema();
+    const db = getDb();
+    const [entry] = await db
+      .update(ledgerEntries)
+      .set({ owner, updatedAt: new Date().toISOString() })
+      .where(
+        and(
+          eq(ledgerEntries.id, id),
+          eq(ledgerEntries.kind, "large_expense"),
+          or(
+            eq(ledgerEntries.owner, role),
+            eq(ledgerEntries.owner, "family"),
+          ),
+        ),
+      )
+      .returning();
+
+    if (!entry) {
+      return Response.json({ error: "记录不存在或不可修改" }, { status: 404 });
+    }
+
+    return Response.json({ entry });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "修改失败";
     return Response.json({ error: message }, { status: 500 });
   }
 }

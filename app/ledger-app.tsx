@@ -39,7 +39,7 @@ const tabs: Array<{ id: Kind; label: string; mark: string; english: string }> = 
 
 const copy: Record<Exclude<Kind, "overview">, { title: string; description: string }> = {
   income: { title: "收入小口袋", description: "工资和额外收入各自收好，只给当前的你看。" },
-  large_expense: { title: "大件愿望单", description: "每年六月开启新周期，五万元预算慢慢花。" },
+  large_expense: { title: "大件愿望单", description: "每年六月开启新周期，当前的你有五万元预算慢慢花。" },
   child_expense: { title: "小宝成长簿", description: "教育、医疗、兴趣和可爱的日常，都记在这里。" },
   abnormal_month: { title: "特别月份", description: "开销超过四千元的月份，留下一张小纸条。" },
   gift: { title: "人情小本本", description: "礼金、礼物、对象和场合，一个都不忘。" },
@@ -86,6 +86,36 @@ function Field({ label, children, wide }: { label: string; children: React.React
   );
 }
 
+function EntryOwner({
+  active,
+  assigning,
+  entry,
+  onAssign,
+}: {
+  active: Kind;
+  assigning: boolean;
+  entry: Entry;
+  onAssign: (id: number, owner: Role) => void;
+}) {
+  if (active === "large_expense" && entry.kind === "large_expense") {
+    return (
+      <select
+        aria-label={`设置 ${entry.title} 的归属`}
+        className="owner-select"
+        disabled={assigning}
+        onChange={(event) => onAssign(entry.id, event.target.value as Role)}
+        value={entry.owner === "family" ? "" : entry.owner}
+      >
+        <option disabled value="">待确认</option>
+        <option value="zcy">ZCY</option>
+        <option value="django">Django</option>
+      </select>
+    );
+  }
+
+  return entry.owner === "family" ? "我们家" : roleNames[entry.owner].name;
+}
+
 export default function LedgerApp() {
   const [active, setActive] = useState<Kind>("overview");
   const [role, setRole] = useState<Role>("zcy");
@@ -99,6 +129,7 @@ export default function LedgerApp() {
   const [loggingIn, setLoggingIn] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [assigningId, setAssigningId] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
   const [kindToAdd, setKindToAdd] = useState<Exclude<Kind, "overview">>("income");
   const [greeting, setGreeting] = useState("今天也要把小日子记得明明白白！");
@@ -144,7 +175,16 @@ export default function LedgerApp() {
   }, []);
 
   const cycle = currentCycle();
-  const largeEntries = entries.filter((entry) => entry.kind === "large_expense" && entry.entryDate >= cycle.start && entry.entryDate <= cycle.end);
+  const largeEntries = entries.filter(
+    (entry) =>
+      entry.kind === "large_expense" &&
+      entry.owner === role &&
+      entry.entryDate >= cycle.start &&
+      entry.entryDate <= cycle.end,
+  );
+  const pendingLargeEntries = entries.filter(
+    (entry) => entry.kind === "large_expense" && entry.owner === "family",
+  );
   const largeUsed = largeEntries.reduce((sum, entry) => sum + entry.amountCents, 0);
   const year = String(new Date().getFullYear());
   const incomeThisYear = entries.filter((entry) => entry.kind === "income" && entry.entryDate.startsWith(year)).reduce((sum, entry) => sum + entry.amountCents, 0);
@@ -191,6 +231,25 @@ export default function LedgerApp() {
     } else {
       const data = (await response.json()) as { error?: string };
       setNotice(data.error || "删除失败");
+    }
+  }
+
+  async function assignEntryOwner(id: number, owner: Role) {
+    setAssigningId(id);
+    try {
+      const response = await fetch(withBasePath(`/api/ledger?id=${id}`), {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ owner }),
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(data.error || "修改归属失败");
+      await load();
+      setNotice(`已归入 ${owner} 的大额消费`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "修改归属失败");
+    } finally {
+      setAssigningId(null);
     }
   }
 
@@ -380,12 +439,68 @@ export default function LedgerApp() {
             <div><span className="section-kicker">{active === "overview" ? "RECENT NOTES" : "ALL NOTES"}</span><h2>{active === "overview" ? "最近的小账目" : `${activeMeta?.title}记录`}</h2></div>
             {active !== "overview" && <button className="outline-button" onClick={() => openAdd()} type="button">＋ 新增</button>}
           </div>
+          {active === "large_expense" && pendingLargeEntries.length > 0 && (
+            <div className="ownership-summary">
+              <strong>{pendingLargeEntries.length} 条历史记录仍在</strong>
+              <span>原导入未保存用户归属，当前标记为待确认。</span>
+            </div>
+          )}
           {loading ? (
             <div className="empty">正在翻找小纸条…</div>
           ) : visibleEntries.length === 0 ? (
             <div className="empty"><img src={withBasePath(activeMascot?.src ?? "/mascot-cutouts/03-drawing-playful-v2.png")} alt={activeMascot?.alt ?? "小女孩开心画画"} height={1254} loading="lazy" width={1254} /><div><strong>这页还是空空的</strong><span>先写下第一笔，让小账本热闹起来吧！</span><button onClick={() => openAdd()} type="button">马上记一笔 →</button></div></div>
           ) : (
-            <div className="table-wrap"><table><thead><tr><th>DATE</th><th>今天发生什么</th><th>分类贴纸</th><th>是谁的</th><th>从哪里来</th><th className="amount">金额</th><th /></tr></thead><tbody>{visibleEntries.map((entry) => <tr key={entry.id}><td>{entry.entryDate}</td><td><strong>{entry.title}</strong>{entry.detail && <small>{entry.detail}</small>}</td><td><span className="tag">{entry.category}</span></td><td>{entry.owner === "family" ? "我们家" : roleNames[entry.owner].name}</td><td><span className={entry.source === "feishu" ? "source imported" : "source"}>{entry.source === "feishu" ? "旧账搬家" : "刚刚手记"}</span></td><td className="amount">{money(entry.amountCents)}</td><td><button aria-label={`删除 ${entry.title}`} className="delete-button" onClick={() => removeEntry(entry.id)} type="button">×</button></td></tr>)}</tbody></table></div>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>DATE</th>
+                    <th>今天发生什么</th>
+                    <th>分类贴纸</th>
+                    <th>是谁的</th>
+                    <th>从哪里来</th>
+                    <th className="amount">金额</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleEntries.map((entry) => (
+                    <tr key={entry.id}>
+                      <td>{entry.entryDate}</td>
+                      <td>
+                        <strong>{entry.title}</strong>
+                        {entry.detail && <small>{entry.detail}</small>}
+                      </td>
+                      <td><span className="tag">{entry.category}</span></td>
+                      <td>
+                        <EntryOwner
+                          active={active}
+                          assigning={assigningId === entry.id}
+                          entry={entry}
+                          onAssign={(id, owner) => void assignEntryOwner(id, owner)}
+                        />
+                      </td>
+                      <td>
+                        <span className={entry.source === "feishu" ? "source imported" : "source"}>
+                          {entry.source === "feishu" ? "旧账搬家" : "刚刚手记"}
+                        </span>
+                      </td>
+                      <td className="amount">{money(entry.amountCents)}</td>
+                      <td>
+                        <button
+                          aria-label={`删除 ${entry.title}`}
+                          className="delete-button"
+                          onClick={() => removeEntry(entry.id)}
+                          type="button"
+                        >
+                          ×
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
       </section>
@@ -411,7 +526,7 @@ export default function LedgerApp() {
                 {kindToAdd === "gift" && <Field label="形式"><select name="giftType"><option>礼金</option><option>礼物</option><option>礼金＋礼物</option></select></Field>}
                 <Field label="备注" wide><textarea name="detail" placeholder="写下原因、场合，或者一句可爱的小备注" rows={3} /></Field>
               </div>
-              <div className="form-foot"><span>{kindToAdd === "income" ? `会收进 ${currentRole.name} 的私人小口袋` : "会收进我们的家庭共享账本"}</span><div><button className="cancel-button" onClick={() => setModalOpen(false)} type="button">等等再记</button><button className="primary-button" disabled={saving} type="submit">{saving ? "正在贴进账本…" : "好啦，保存！"}</button></div></div>
+              <div className="form-foot"><span>{kindToAdd === "income" || kindToAdd === "large_expense" ? `会收进 ${currentRole.name} 的私人小口袋` : "会收进我们的家庭共享账本"}</span><div><button className="cancel-button" onClick={() => setModalOpen(false)} type="button">等等再记</button><button className="primary-button" disabled={saving} type="submit">{saving ? "正在贴进账本…" : "好啦，保存！"}</button></div></div>
             </form>
           </section>
         </div>

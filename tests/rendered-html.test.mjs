@@ -52,6 +52,27 @@ test("renders the overview greeting from the user's local time", async () => {
   assert.doesNotMatch(client, /activeMeta\?\.title \?\? "晚上好/);
 });
 
+test("keeps large expenses private to their assigned user", async () => {
+  const [client, ledgerRoute] = await Promise.all([
+    readFile(new URL("app/ledger-app.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/api/ledger/route.ts", projectRoot), "utf8"),
+  ]);
+
+  assert.match(
+    ledgerRoute,
+    /kind === "income" \|\| kind === "large_expense" \? role : "family"/,
+  );
+  assert.match(ledgerRoute, /export async function PATCH\(request: Request\)/);
+  assert.match(ledgerRoute, /eq\(ledgerEntries\.kind, "large_expense"\)/);
+  assert.match(client, /entry\.owner === role/);
+  assert.match(client, /pendingLargeEntries/);
+  assert.match(client, /method: "PATCH"/);
+  assert.match(
+    client,
+    /kindToAdd === "income" \|\| kindToAdd === "large_expense"/,
+  );
+});
+
 test("redirects the bare base path to its canonical trailing-slash URL", async () => {
   const [viteConfig, worker] = await Promise.all([
     readFile(new URL("vite.config.ts", projectRoot), "utf8"),
