@@ -118,10 +118,18 @@ test("uses transparent Cola artwork across every ledger page", async () => {
   assert.doesNotMatch(client, /\/mascot-scenes\//);
 });
 
-test("limits the interface to two readable rounded font families", async () => {
+test("embeds two open cartoon fonts inspired by the supplied reference", async () => {
   const css = await readFile(new URL("app/globals.css", projectRoot), "utf8");
 
-  assert.match(css, /--display:\s*"Arial Rounded MT Bold", "Microsoft YaHei"/);
-  assert.match(css, /--round:\s*"Microsoft YaHei", sans-serif/);
+  await Promise.all([
+    access(new URL("public/fonts/ZCOOLKuaiLe-Regular.ttf", projectRoot)),
+    access(new URL("public/fonts/ZCOOLQingKeHuangYou-Regular.ttf", projectRoot)),
+    access(new URL("public/fonts/OFL.txt", projectRoot)),
+    access(new URL("public/fonts/OFL-QingKeHuangYou.txt", projectRoot)),
+  ]);
+  assert.match(css, /--display:\s*"ZCOOL KuaiLe", sans-serif/);
+  assert.match(css, /--round:\s*"ZCOOL QingKe HuangYou", sans-serif/);
+  assert.match(css, /\/fonts\/ZCOOLKuaiLe-Regular\.ttf/);
+  assert.match(css, /\/fonts\/ZCOOLQingKeHuangYou-Regular\.ttf/);
   assert.doesNotMatch(css, /Segoe Print|Bradley Hand|Comic Sans/);
 });

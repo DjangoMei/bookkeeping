@@ -306,7 +306,7 @@ export default function LedgerApp() {
         </div>
       </aside>
 
-      <section className="content">
+      <section className={active === "overview" ? "content content-overview" : "content content-detail"}>
         <header className="topbar">
           <div>
             <p className="eyebrow">COLA&apos;S TINY LEDGER · 小日子收藏所</p>
@@ -323,7 +323,7 @@ export default function LedgerApp() {
             <section className="hero-card">
               <div className="hero-copy">
                 <span className="hero-kicker">OUR LITTLE MONEY STORY</span>
-                <h2>可乐小宝的<br /><em>小小生活账</em></h2>
+                <h2>可乐小宝的 <em>小小生活账</em></h2>
                 <p>认真生活，开心花钱，也别忘了把今天收进小本本。</p>
                 <div className="hero-tags"><span>COLA</span><span>可乐</span><span>小宝</span></div>
               </div>
