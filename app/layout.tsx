@@ -13,21 +13,22 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase,
     title: {
-      default: "家账 · 家庭账本",
-      template: "%s · 家账",
+      default: "Cola · 可乐小宝的小账本",
+      template: "%s · Cola",
     },
-    description: "清楚记录收入、大额消费、孩子支出、异常月份与人情往来。",
+    description: "为可乐——我们爱叫的小宝——收藏生活、记录每一笔的小小家庭账本。",
+    icons: { icon: withBasePath("/mascot-scenes/00-character-base.png") },
     openGraph: {
-      title: "家账",
-      description: "清楚一点，安心一点",
-      images: [{ url: imageUrl, width: 1536, height: 1024, alt: "家账家庭账本" }],
+      title: "Cola · 可乐小宝的小账本",
+      description: "认真生活，开心花钱，把每一天收进小本本。",
+      images: [{ url: imageUrl, width: 1536, height: 1024, alt: "Cola 可乐小宝的小账本" }],
       locale: "zh_CN",
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: "家账",
-      description: "清楚一点，安心一点",
+      title: "Cola · 可乐小宝的小账本",
+      description: "认真生活，开心花钱，把每一天收进小本本。",
       images: [imageUrl],
     },
   };

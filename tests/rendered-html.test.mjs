@@ -38,7 +38,7 @@ test("initializes authentication and ledger data with one request", async () => 
     /fetch\(withBasePath\("\/api\/session"\)\);/,
   );
   assert.doesNotMatch(client, /if \(sessionChecking\) \{/);
-  assert.match(client, /正在检查已保存的登录状态/);
+  assert.match(client, /正在翻开小账本/);
 });
 
 test("renders the overview greeting from the user's local time", async () => {
