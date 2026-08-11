@@ -237,7 +237,7 @@ export default function LedgerApp() {
         <div className="login-scribble login-scribble-two">♡ little days ♡</div>
         <section className="login-visual" aria-hidden="true">
           <div className="login-sticker">可乐的小日子</div>
-          <img src={withBasePath("/mascot-cutouts/00-character-base.png")} alt="" />
+          <img src={withBasePath("/mascot-cutouts/00-character-base.png")} alt="" fetchPriority="high" height={1254} width={1254} />
           <p>COZY DAYS<br />WITH COLA</p>
         </section>
         <section className="login-card">
@@ -262,7 +262,7 @@ export default function LedgerApp() {
             </fieldset>
             <label className="login-field">
               <span>秘密口令</span>
-              <input autoComplete="current-password" autoFocus onChange={(event) => setPassphrase(event.target.value)} placeholder="悄悄输入…" required type="password" value={passphrase} />
+              <input autoComplete="current-password" onChange={(event) => setPassphrase(event.target.value)} placeholder="悄悄输入…" required type="password" value={passphrase} />
             </label>
             {(loginError || notice) && <div className="login-error">{loginError || notice}</div>}
             <button className="login-button" disabled={loggingIn || sessionChecking} type="submit">
@@ -277,6 +277,7 @@ export default function LedgerApp() {
 
   return (
     <main className="shell">
+      <a className="skip-link" href="#ledger-content">跳到主要内容</a>
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-seal">C</div>
@@ -291,8 +292,8 @@ export default function LedgerApp() {
           ))}
         </nav>
         <div className="sidebar-mascot">
-          <span>HUG YOUR<br />LITTLE DAYS!</span>
-          <img src={withBasePath("/mascot-cutouts/00-character-base.png")} alt="可乐开心地向前走" />
+          <span>翻翻今天的<br />小账本</span>
+          <img src={withBasePath("/mascot-cutouts/02-reading-picture-book.png")} alt="可乐坐着看图画书" height={1254} width={1254} />
         </div>
         <div className="sidebar-note">
           <span>BIG BUY PLAN</span><strong>{cycle.label}</strong>
@@ -306,7 +307,7 @@ export default function LedgerApp() {
         </div>
       </aside>
 
-      <section className={active === "overview" ? "content content-overview" : "content content-detail"}>
+      <section className={active === "overview" ? "content content-overview" : "content content-detail"} id="ledger-content">
         <header className="topbar">
           <div>
             <p className="eyebrow">COLA&apos;S TINY LEDGER · 小日子收藏所</p>
@@ -316,7 +317,7 @@ export default function LedgerApp() {
           <button className="primary-button" onClick={() => openAdd()} type="button"><span>＋</span> 记一笔</button>
         </header>
 
-        {notice && <div className="notice">✦ {notice}</div>}
+        {notice && <div aria-live="polite" className="notice" role="status">✦ {notice}</div>}
 
         {active === "overview" && (
           <>
@@ -328,8 +329,8 @@ export default function LedgerApp() {
                 <div className="hero-tags"><span>COLA</span><span>可乐</span><span>小宝</span></div>
               </div>
               <div className="hero-image-wrap">
-                <span className="spark spark-one">✦</span><span className="spark spark-two">♡</span>
-                <img src={withBasePath("/mascot-cutouts/04-watching-tv-excited-v2.png")} alt="小女孩兴奋地看电视跳舞" />
+                <span aria-hidden="true" className="spark spark-one">✦</span><span aria-hidden="true" className="spark spark-two">♡</span>
+                <img src={withBasePath("/mascot-cutouts/04-watching-tv-excited-v2.png")} alt="小女孩兴奋地看电视跳舞" fetchPriority="high" height={1254} width={1254} />
               </div>
             </section>
 
@@ -351,8 +352,7 @@ export default function LedgerApp() {
               <section className="panel quick-panel">
                 <div className="panel-head"><div><span className="section-kicker">QUICK NOTES</span><h2>今天记点什么？</h2></div></div>
                 <div className="quick-mascots" aria-hidden="true">
-                  <img src={withBasePath("/mascot-cutouts/02-reading-picture-book.png")} alt="" />
-                  <img src={withBasePath("/mascot-cutouts/03-drawing-playful-v2.png")} alt="" />
+                  <img src={withBasePath("/mascot-cutouts/03-drawing-playful-v2.png")} alt="" height={1254} loading="lazy" width={1254} />
                 </div>
                 <div className="quick-grid">
                   {tabs.slice(2).map((tab) => <button key={tab.id} onClick={() => openAdd(tab.id as Exclude<Kind, "overview">)} type="button"><span>{tab.mark}</span><strong>{tab.label}</strong><small>{tab.english}</small></button>)}
@@ -370,8 +370,8 @@ export default function LedgerApp() {
               <small>可乐，也叫小宝 · 这是同一个可爱的小朋友</small>
             </div>
             <div className="page-banner-art">
-              <img src={withBasePath(activeMascot.src)} alt={activeMascot.alt} />
-              {activeMascot.second && <img className="page-banner-second" src={withBasePath(activeMascot.second)} alt="" />}
+              <img src={withBasePath(activeMascot.src)} alt={activeMascot.alt} height={1254} width={1254} />
+              {activeMascot.second && <img className="page-banner-second" src={withBasePath(activeMascot.second)} alt="" height={1254} width={1254} />}
             </div>
           </section>
         )}
@@ -384,7 +384,7 @@ export default function LedgerApp() {
           {loading ? (
             <div className="empty">正在翻找小纸条…</div>
           ) : visibleEntries.length === 0 ? (
-            <div className="empty"><img src={withBasePath(activeMascot?.src ?? "/mascot-cutouts/03-drawing-playful-v2.png")} alt={activeMascot?.alt ?? "小女孩开心画画"} /><div><strong>这页还是空空的</strong><span>先写下第一笔，让小账本热闹起来吧！</span><button onClick={() => openAdd()} type="button">马上记一笔 →</button></div></div>
+            <div className="empty"><img src={withBasePath(activeMascot?.src ?? "/mascot-cutouts/03-drawing-playful-v2.png")} alt={activeMascot?.alt ?? "小女孩开心画画"} height={1254} loading="lazy" width={1254} /><div><strong>这页还是空空的</strong><span>先写下第一笔，让小账本热闹起来吧！</span><button onClick={() => openAdd()} type="button">马上记一笔 →</button></div></div>
           ) : (
             <div className="table-wrap"><table><thead><tr><th>DATE</th><th>今天发生什么</th><th>分类贴纸</th><th>是谁的</th><th>从哪里来</th><th className="amount">金额</th><th /></tr></thead><tbody>{visibleEntries.map((entry) => <tr key={entry.id}><td>{entry.entryDate}</td><td><strong>{entry.title}</strong>{entry.detail && <small>{entry.detail}</small>}</td><td><span className="tag">{entry.category}</span></td><td>{entry.owner === "family" ? "我们家" : roleNames[entry.owner].name}</td><td><span className={entry.source === "feishu" ? "source imported" : "source"}>{entry.source === "feishu" ? "旧账搬家" : "刚刚手记"}</span></td><td className="amount">{money(entry.amountCents)}</td><td><button aria-label={`删除 ${entry.title}`} className="delete-button" onClick={() => removeEntry(entry.id)} type="button">×</button></td></tr>)}</tbody></table></div>
           )}

@@ -118,18 +118,19 @@ test("uses transparent Cola artwork across every ledger page", async () => {
   assert.doesNotMatch(client, /\/mascot-scenes\//);
 });
 
-test("embeds two open cartoon fonts inspired by the supplied reference", async () => {
+test("uses a clear rounded square system font without decorative webfonts", async () => {
   const css = await readFile(new URL("app/globals.css", projectRoot), "utf8");
 
-  await Promise.all([
-    access(new URL("public/fonts/ZCOOLKuaiLe-Regular.ttf", projectRoot)),
-    access(new URL("public/fonts/ZCOOLQingKeHuangYou-Regular.ttf", projectRoot)),
-    access(new URL("public/fonts/OFL.txt", projectRoot)),
-    access(new URL("public/fonts/OFL-QingKeHuangYou.txt", projectRoot)),
-  ]);
-  assert.match(css, /--display:\s*"ZCOOL KuaiLe", sans-serif/);
-  assert.match(css, /--round:\s*"ZCOOL QingKe HuangYou", sans-serif/);
-  assert.match(css, /\/fonts\/ZCOOLKuaiLe-Regular\.ttf/);
-  assert.match(css, /\/fonts\/ZCOOLQingKeHuangYou-Regular\.ttf/);
-  assert.doesNotMatch(css, /Segoe Print|Bradley Hand|Comic Sans/);
+  assert.match(css, /--round:\s*"Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC"/);
+  assert.match(css, /--display:\s*var\(--round\)/);
+  assert.doesNotMatch(css, /@font-face|ZCOOL|Segoe Print|Bradley Hand|Comic Sans/);
+});
+
+test("keeps secondary pages in one explicit column without inherited overview areas", async () => {
+  const css = await readFile(new URL("app/globals.css", projectRoot), "utf8");
+
+  assert.match(css, /\.content-detail\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/);
+  assert.match(css, /grid-template-areas:\s*\n\s*"detail-top"\s*\n\s*"detail-banner"\s*\n\s*"detail-records"/);
+  assert.match(css, /\.content-detail \.topbar\s*\{\s*grid-area:\s*detail-top/);
+  assert.match(css, /\.content-detail \.records-panel\s*\{\s*grid-area:\s*detail-records/);
 });
