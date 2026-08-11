@@ -367,7 +367,6 @@ export default function LedgerApp() {
             <div>
               <span className="section-kicker">COLA&apos;S LITTLE MOMENT</span>
               <strong>{activeMascot.note}</strong>
-              <small>可乐，也叫小宝 · 这是同一个可爱的小朋友</small>
             </div>
             <div className="page-banner-art">
               <img src={withBasePath(activeMascot.src)} alt={activeMascot.alt} height={1254} width={1254} />

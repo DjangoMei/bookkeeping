@@ -128,9 +128,11 @@ test("uses a clear rounded square system font without decorative webfonts", asyn
 
 test("keeps secondary pages in one explicit column without inherited overview areas", async () => {
   const css = await readFile(new URL("app/globals.css", projectRoot), "utf8");
+  const client = await readFile(new URL("app/ledger-app.tsx", projectRoot), "utf8");
 
   assert.match(css, /\.content-detail\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/);
   assert.match(css, /grid-template-areas:\s*\n\s*"detail-top"\s*\n\s*"detail-banner"\s*\n\s*"detail-records"/);
   assert.match(css, /\.content-detail \.topbar\s*\{\s*grid-area:\s*detail-top/);
   assert.match(css, /\.content-detail \.records-panel\s*\{\s*grid-area:\s*detail-records/);
+  assert.doesNotMatch(client, /这是同一个可爱的小朋友/);
 });
