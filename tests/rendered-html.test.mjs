@@ -97,3 +97,31 @@ test("packages immutable client assets under the public base path", async () => 
   assert.match(plugin, /await cp\(/);
   assert.match(headers, /\/bookkeeping\/assets\/\*/);
 });
+
+test("uses transparent Cola artwork across every ledger page", async () => {
+  const client = await readFile(new URL("app/ledger-app.tsx", projectRoot), "utf8");
+  const cutouts = [
+    "00-character-base.png",
+    "01-playing-blocks.png",
+    "02-reading-picture-book.png",
+    "03-drawing-playful-v2.png",
+    "04-watching-tv-excited-v2.png",
+    "05-playing-ball.png",
+    "06-bunny-tight-hug-v2.png",
+    "07-eating-cake.png",
+    "08-crying.png",
+    "09-angry.png",
+  ];
+
+  await Promise.all(cutouts.map((name) => access(new URL(`public/mascot-cutouts/${name}`, projectRoot))));
+  for (const name of cutouts) assert.match(client, new RegExp(name.replaceAll(".", "\\.")));
+  assert.doesNotMatch(client, /\/mascot-scenes\//);
+});
+
+test("limits the interface to two readable rounded font families", async () => {
+  const css = await readFile(new URL("app/globals.css", projectRoot), "utf8");
+
+  assert.match(css, /--display:\s*"Arial Rounded MT Bold", "Microsoft YaHei"/);
+  assert.match(css, /--round:\s*"Microsoft YaHei", sans-serif/);
+  assert.doesNotMatch(css, /Segoe Print|Bradley Hand|Comic Sans/);
+});
