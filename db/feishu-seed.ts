@@ -7,6 +7,7 @@ type SeedEntry = {
   category: string;
   amount: number;
   detail?: string;
+  payer?: "family" | "mother";
   month?: string;
   giftType?: string;
 };
@@ -53,6 +54,7 @@ const childExpense = (
     category: "日常",
     amount,
     detail: detail ?? "",
+    payer: detail?.includes("妈妈") ? "mother" : "family",
   }));
 
 const gift = (
@@ -246,8 +248,8 @@ export async function seedFeishuEntries(db: D1Database) {
   const insert = `
     INSERT INTO ledger_entries (
       source_key, kind, owner, entry_date, month, title, category,
-      amount_cents, detail, gift_type, source, created_by_role
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'feishu', 'system')
+      amount_cents, detail, payer, gift_type, source, created_by_role
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'feishu', 'system')
     ON CONFLICT(source_key) DO UPDATE SET
       owner = excluded.owner,
       updated_at = CURRENT_TIMESTAMP
@@ -269,6 +271,7 @@ export async function seedFeishuEntries(db: D1Database) {
         entry.category,
         Math.round(entry.amount * 100),
         entry.detail ?? "",
+        entry.payer ?? "family",
         entry.giftType ?? null,
       ),
   );

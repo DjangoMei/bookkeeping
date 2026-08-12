@@ -23,6 +23,7 @@ type Entry = {
   category: string;
   amountCents: number;
   detail: string;
+  payer: "family" | "mother";
   giftType: string | null;
   source: "manual" | "feishu";
   createdByRole: Role | "system";
@@ -32,6 +33,7 @@ type LedgerHistoryState = {
   ledgerView: true;
   active: Kind;
   modal: Exclude<Kind, "overview"> | null;
+  editId: number | null;
 };
 
 const tabs: Array<{ id: Kind; label: string; mark: string; english: string }> = [
@@ -49,6 +51,14 @@ const copy: Record<Exclude<Kind, "overview">, { title: string; description: stri
   child_expense: { title: "小宝成长簿", description: "教育、医疗、兴趣和可爱的日常，都记在这里。" },
   abnormal_month: { title: "特别月份", description: "开销超过四千元的月份，留下一张小纸条。" },
   gift: { title: "人情小本本", description: "礼金、礼物、对象和场合，一个都不忘。" },
+};
+
+const categoryOptions: Record<Exclude<Kind, "overview">, string[]> = {
+  income: ["工资", "额外收入"],
+  large_expense: ["家电", "旅行", "家居", "医疗", "其他"],
+  child_expense: ["教育", "医疗", "兴趣", "日常", "其他"],
+  abnormal_month: ["大额购物", "旅行", "医疗", "临时事项", "其他"],
+  gift: ["节庆", "生日", "婚礼", "探望", "其他"],
 };
 
 const roleNames: Record<Role, { name: string; english: string; initial: string }> = {
@@ -69,8 +79,10 @@ function ledgerHistoryState(value: unknown): LedgerHistoryState | null {
   const state = value as Partial<LedgerHistoryState>;
   const activeExists = tabs.some((tab) => tab.id === state.active);
   const modalExists = state.modal === null || tabs.some((tab) => tab.id === state.modal && tab.id !== "overview");
+  const editIdExists = state.editId === undefined || state.editId === null || (Number.isInteger(state.editId) && state.editId > 0);
   return state.ledgerView === true && activeExists && modalExists
-    ? state as LedgerHistoryState
+    && editIdExists
+    ? { ...state, editId: state.editId ?? null } as LedgerHistoryState
     : null;
 }
 
@@ -129,6 +141,10 @@ function EntryOwner({
     );
   }
 
+  if (active === "child_expense" && entry.kind === "child_expense") {
+    return <span className={entry.payer === "mother" ? "payer mother" : "payer"}>{entry.payer === "mother" ? "妈妈支付" : "家庭支付"}</span>;
+  }
+
   return entry.owner === "family" ? "我们家" : roleNames[entry.owner].name;
 }
 
@@ -144,6 +160,7 @@ export default function LedgerApp() {
   const [loginError, setLoginError] = useState("");
   const [loggingIn, setLoggingIn] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [assigningId, setAssigningId] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
@@ -199,6 +216,7 @@ export default function LedgerApp() {
       setActive(state.active);
       setModalOpen(state.modal !== null);
       if (state.modal) setKindToAdd(state.modal);
+      setEditingId(state.editId);
       setNotice("");
     }
 
@@ -207,7 +225,7 @@ export default function LedgerApp() {
     if (current) {
       initialStateTimer = window.setTimeout(() => applyHistoryState(current), 0);
     } else {
-      window.history.replaceState({ ledgerView: true, active: "overview", modal: null } satisfies LedgerHistoryState, "");
+      window.history.replaceState({ ledgerView: true, active: "overview", modal: null, editId: null } satisfies LedgerHistoryState, "");
     }
 
     function handlePopState(event: PopStateEvent) {
@@ -235,6 +253,7 @@ export default function LedgerApp() {
   const year = String(new Date().getFullYear());
   const incomeThisYear = entries.filter((entry) => entry.kind === "income" && entry.entryDate.startsWith(year)).reduce((sum, entry) => sum + entry.amountCents, 0);
   const childThisYear = entries.filter((entry) => entry.kind === "child_expense" && entry.entryDate.startsWith(year)).reduce((sum, entry) => sum + entry.amountCents, 0);
+  const childMotherThisYear = entries.filter((entry) => entry.kind === "child_expense" && entry.payer === "mother" && entry.entryDate.startsWith(year)).reduce((sum, entry) => sum + entry.amountCents, 0);
   const abnormalCount = entries.filter((entry) => entry.kind === "abnormal_month" && entry.entryDate.startsWith(year)).length;
   const giftsThisYear = entries.filter((entry) => entry.kind === "gift" && entry.entryDate.startsWith(year)).reduce((sum, entry) => sum + entry.amountCents, 0);
 
@@ -253,7 +272,7 @@ export default function LedgerApp() {
 
   function navigateTo(next: Kind) {
     if (next === active && !modalOpen) return;
-    const nextState = { ledgerView: true, active: next, modal: null } satisfies LedgerHistoryState;
+    const nextState = { ledgerView: true, active: next, modal: null, editId: null } satisfies LedgerHistoryState;
     if (active !== "overview" && next !== "overview" && !modalOpen) {
       window.history.replaceState(nextState, "");
     } else {
@@ -261,19 +280,30 @@ export default function LedgerApp() {
     }
     setActive(next);
     setModalOpen(false);
+    setEditingId(null);
     setNotice("");
   }
 
   function openAdd(kind?: Exclude<Kind, "overview">) {
     const nextKind = kind ?? (active === "overview" ? "income" : active);
-    window.history.pushState({ ledgerView: true, active, modal: nextKind } satisfies LedgerHistoryState, "");
+    window.history.pushState({ ledgerView: true, active, modal: nextKind, editId: null } satisfies LedgerHistoryState, "");
     setKindToAdd(nextKind);
+    setEditingId(null);
+    setModalOpen(true);
+    setNotice("");
+  }
+
+  function openEdit(entry: Entry) {
+    window.history.pushState({ ledgerView: true, active, modal: entry.kind, editId: entry.id } satisfies LedgerHistoryState, "");
+    setKindToAdd(entry.kind);
+    setEditingId(entry.id);
     setModalOpen(true);
     setNotice("");
   }
 
   function closeModal() {
     setModalOpen(false);
+    setEditingId(null);
     const current = ledgerHistoryState(window.history.state);
     if (current?.modal) window.history.back();
   }
@@ -283,8 +313,8 @@ export default function LedgerApp() {
     const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
     setSaving(true);
     try {
-      const response = await fetch(withBasePath("/api/ledger"), {
-        method: "POST",
+      const response = await fetch(withBasePath(editingId ? `/api/ledger?id=${editingId}` : "/api/ledger"), {
+        method: editingId ? "PATCH" : "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -292,7 +322,7 @@ export default function LedgerApp() {
       if (!response.ok) throw new Error(data.error || "保存失败");
       closeModal();
       await load();
-      setNotice("叮！这笔已经收进 Cola 小账本啦。");
+      setNotice(editingId ? "这笔账已经修改好啦。" : "叮！这笔已经收进 Cola 小账本啦。");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "保存失败");
     } finally {
@@ -356,10 +386,11 @@ export default function LedgerApp() {
 
   async function logout() {
     await fetch(withBasePath("/api/session"), { method: "DELETE" });
-    window.history.replaceState({ ledgerView: true, active: "overview", modal: null } satisfies LedgerHistoryState, "");
+    window.history.replaceState({ ledgerView: true, active: "overview", modal: null, editId: null } satisfies LedgerHistoryState, "");
     setEntries([]);
     setActive("overview");
     setModalOpen(false);
+    setEditingId(null);
     setAuthenticated(false);
     setPassphrase("");
     setNotice("");
@@ -369,6 +400,10 @@ export default function LedgerApp() {
   const formMeta = copy[kindToAdd];
   const currentRole = roleNames[role];
   const activeMascot = active === "overview" ? null : mascotByPage[active];
+  const editingEntry = editingId === null ? null : entries.find((entry) => entry.id === editingId) ?? null;
+  const formCategories = editingEntry && !categoryOptions[kindToAdd].includes(editingEntry.category)
+    ? [editingEntry.category, ...categoryOptions[kindToAdd]]
+    : categoryOptions[kindToAdd];
 
   if (!authenticated) {
     return (
@@ -477,7 +512,7 @@ export default function LedgerApp() {
             <div className="metric-grid">
               <article className="metric-card red"><span>MY INCOME</span><strong>{money(incomeThisYear)}</strong><small>{currentRole.name}今年的收入</small><b className="metric-stamp">01</b></article>
               <article className="metric-card cream"><span>BIG BUY</span><strong>{money(largeUsed)}</strong><small>还可以花 {money(Math.max(5_000_000 - largeUsed, 0))}</small><b className="metric-stamp">02</b></article>
-              <article className="metric-card blue"><span>FOR BABY</span><strong>{money(childThisYear)}</strong><small>小宝今年的成长花费</small><b className="metric-stamp">03</b></article>
+              <article className="metric-card blue"><span>FOR BABY</span><strong>{money(childThisYear)}</strong><small>其中妈妈支付 {money(childMotherThisYear)}</small><b className="metric-stamp">03</b></article>
               <article className="metric-card cream"><span>SPECIAL &amp; GIFTS</span><strong>{abnormalCount}<em> 个月</em></strong><small>今年收到 {money(giftsThisYear)}</small><b className="metric-stamp">04</b></article>
             </div>
 
@@ -526,6 +561,12 @@ export default function LedgerApp() {
               <span>原导入未保存用户归属，当前标记为待确认。</span>
             </div>
           )}
+          {active === "child_expense" && (
+            <div className="ownership-summary child-summary">
+              <strong>今年妈妈为小宝支付 {money(childMotherThisYear)}</strong>
+              <span>旧账中备注“妈妈”的记录已自动归入，修改账目时也可以调整付款人。</span>
+            </div>
+          )}
           {loading ? (
             <div className="empty">正在翻找小纸条…</div>
           ) : visibleEntries.length === 0 ? (
@@ -538,10 +579,10 @@ export default function LedgerApp() {
                     <th>DATE</th>
                     <th>今天发生什么</th>
                     <th>分类贴纸</th>
-                    <th>是谁的</th>
+                    <th>{active === "child_expense" ? "谁支付" : "是谁的"}</th>
                     <th>从哪里来</th>
                     <th className="amount">金额</th>
-                    <th />
+                    <th>操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -569,6 +610,14 @@ export default function LedgerApp() {
                       <td className="amount">{money(entry.amountCents)}</td>
                       <td>
                         <button
+                          aria-label={`修改 ${entry.title}`}
+                          className="edit-button"
+                          onClick={() => openEdit(entry)}
+                          type="button"
+                        >
+                          改
+                        </button>
+                        <button
                           aria-label={`删除 ${entry.title}`}
                           className="delete-button"
                           onClick={() => removeEntry(entry.id)}
@@ -589,25 +638,20 @@ export default function LedgerApp() {
       {modalOpen && (
         <div className="modal-backdrop" onMouseDown={closeModal}>
           <section aria-labelledby="entry-form-title" aria-modal="true" className="modal" onMouseDown={(event) => event.stopPropagation()} role="dialog">
-            <div className="modal-head"><div><span className="section-kicker">NEW LITTLE NOTE</span><h2 id="entry-form-title">{formMeta.title}</h2><p>{formMeta.description}</p></div><button aria-label="关闭" onClick={closeModal} type="button">×</button></div>
-            <form onSubmit={saveEntry}>
+            <div className="modal-head"><div><span className="section-kicker">{editingEntry ? "EDIT LITTLE NOTE" : "NEW LITTLE NOTE"}</span><h2 id="entry-form-title">{editingEntry ? `修改${formMeta.title}` : formMeta.title}</h2><p>{editingEntry ? "改好后保存，原来的记录会直接更新。" : formMeta.description}</p></div><button aria-label="关闭" onClick={closeModal} type="button">×</button></div>
+            <form key={editingEntry?.id ?? `new-${kindToAdd}`} onSubmit={saveEntry}>
               <input name="kind" type="hidden" value={kindToAdd} />
               <div className="form-grid">
-                <Field label="日期"><input defaultValue={today} name="entryDate" required type="date" /></Field>
-                {kindToAdd === "abnormal_month" && <Field label="信用卡自然月"><input defaultValue={today.slice(0, 7)} name="month" required type="month" /></Field>}
-                <Field label={kindToAdd === "gift" ? "送礼人 / 对象" : "项目"}><input name="title" placeholder={kindToAdd === "income" ? "例如：这个月的工资" : "给这笔小账起个名字"} required /></Field>
-                <Field label="金额（元）"><input min="0" name="amount" placeholder="0.00" required step="0.01" type="number" /></Field>
-                <Field label="分类"><select name="category">
-                  {kindToAdd === "income" && <><option>工资</option><option>额外收入</option></>}
-                  {kindToAdd === "large_expense" && <><option>家电</option><option>旅行</option><option>家居</option><option>医疗</option><option>其他</option></>}
-                  {kindToAdd === "child_expense" && <><option>教育</option><option>医疗</option><option>兴趣</option><option>日常</option><option>其他</option></>}
-                  {kindToAdd === "abnormal_month" && <><option>大额购物</option><option>旅行</option><option>医疗</option><option>临时事项</option><option>其他</option></>}
-                  {kindToAdd === "gift" && <><option>节庆</option><option>生日</option><option>婚礼</option><option>探望</option><option>其他</option></>}
-                </select></Field>
-                {kindToAdd === "gift" && <Field label="形式"><select name="giftType"><option>礼金</option><option>礼物</option><option>礼金＋礼物</option></select></Field>}
-                <Field label="备注" wide><textarea name="detail" placeholder="写下原因、场合，或者一句可爱的小备注" rows={3} /></Field>
+                <Field label="日期"><input defaultValue={editingEntry?.entryDate ?? today} name="entryDate" required type="date" /></Field>
+                {kindToAdd === "abnormal_month" && <Field label="信用卡自然月"><input defaultValue={editingEntry?.month ?? today.slice(0, 7)} name="month" required type="month" /></Field>}
+                <Field label={kindToAdd === "gift" ? "送礼人 / 对象" : "项目"}><input defaultValue={editingEntry?.title ?? ""} name="title" placeholder={kindToAdd === "income" ? "例如：这个月的工资" : "给这笔小账起个名字"} required /></Field>
+                <Field label="金额（元）"><input defaultValue={editingEntry ? editingEntry.amountCents / 100 : ""} min={kindToAdd === "large_expense" ? undefined : "0"} name="amount" placeholder="0.00" required step="0.01" type="number" /></Field>
+                <Field label="分类"><select defaultValue={editingEntry?.category ?? formCategories[0]} name="category">{formCategories.map((category) => <option key={category}>{category}</option>)}</select></Field>
+                {kindToAdd === "child_expense" && <Field label="付款人"><select defaultValue={editingEntry?.payer ?? "family"} name="payer"><option value="family">家庭支付</option><option value="mother">妈妈支付</option></select></Field>}
+                {kindToAdd === "gift" && <Field label="形式"><select defaultValue={editingEntry?.giftType ?? "礼金"} name="giftType"><option>礼金</option><option>礼物</option><option>礼金＋礼物</option></select></Field>}
+                <Field label="备注" wide><textarea defaultValue={editingEntry?.detail ?? ""} name="detail" placeholder="写下原因、场合，或者一句可爱的小备注" rows={3} /></Field>
               </div>
-              <div className="form-foot"><span>{kindToAdd === "income" || kindToAdd === "large_expense" ? `会收进 ${currentRole.name} 的私人小口袋` : "会收进我们的家庭共享账本"}</span><div><button className="cancel-button" onClick={closeModal} type="button">等等再记</button><button className="primary-button" disabled={saving} type="submit">{saving ? "正在贴进账本…" : "好啦，保存！"}</button></div></div>
+              <div className="form-foot"><span>{kindToAdd === "income" || kindToAdd === "large_expense" ? `会收进 ${currentRole.name} 的私人小口袋` : "会收进我们的家庭共享账本"}</span><div><button className="cancel-button" onClick={closeModal} type="button">等等再记</button><button className="primary-button" disabled={saving} type="submit">{saving ? "正在保存…" : editingEntry ? "保存修改" : "好啦，保存！"}</button></div></div>
             </form>
           </section>
         </div>

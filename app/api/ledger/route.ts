@@ -98,6 +98,7 @@ export async function POST(request: Request) {
         category: cleanText(payload.category, 40) || "其他",
         amountCents,
         detail: cleanText(payload.detail, 500),
+        payer: kind === "child_expense" && cleanText(payload.payer, 10) === "mother" ? "mother" : "family",
         giftType: kind === "gift" ? cleanText(payload.giftType, 20) || "礼金" : null,
         source: "manual",
         createdByRole: role,
@@ -123,25 +124,59 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const payload = (await request.json()) as Record<string, unknown>;
-    const owner = cleanText(payload.owner, 10);
-    if (owner !== "zcy" && owner !== "django") {
-      return Response.json({ error: "请选择 zcy 或 Django" }, { status: 400 });
-    }
-
     await ensureLedgerSchema();
     const db = getDb();
+    const payload = (await request.json()) as Record<string, unknown>;
+
+    if (Object.keys(payload).length === 1 && "owner" in payload) {
+      const owner = cleanText(payload.owner, 10);
+      if (owner !== "zcy" && owner !== "django") {
+        return Response.json({ error: "请选择 zcy 或 Django" }, { status: 400 });
+      }
+
+      const [entry] = await db
+        .update(ledgerEntries)
+        .set({ owner, updatedAt: new Date().toISOString() })
+        .where(
+          and(
+            eq(ledgerEntries.id, id),
+            eq(ledgerEntries.kind, "large_expense"),
+            or(eq(ledgerEntries.owner, role), eq(ledgerEntries.owner, "family")),
+          ),
+        )
+        .returning();
+
+      if (!entry) return Response.json({ error: "记录不存在或不可修改" }, { status: 404 });
+      return Response.json({ entry });
+    }
+
+    const kind = cleanText(payload.kind) as EntryKind;
+    const entryDate = cleanText(payload.entryDate, 10);
+    const title = cleanText(payload.title, 80);
+    const amountCents = centsFromUnknown(payload.amount);
+    if (!VALID_KINDS.has(kind) || !entryDate || !title || !Number.isFinite(amountCents) || (amountCents < 0 && kind !== "large_expense")) {
+      return Response.json({ error: "请完整填写日期、项目和金额" }, { status: 400 });
+    }
+
+    const month = kind === "abnormal_month" ? cleanText(payload.month, 7) || entryDate.slice(0, 7) : null;
     const [entry] = await db
       .update(ledgerEntries)
-      .set({ owner, updatedAt: new Date().toISOString() })
+      .set({
+        entryDate,
+        month,
+        title,
+        category: cleanText(payload.category, 40) || "其他",
+        amountCents,
+        detail: cleanText(payload.detail, 500),
+        payer: kind === "child_expense" && cleanText(payload.payer, 10) === "mother" ? "mother" : "family",
+        giftType: kind === "gift" ? cleanText(payload.giftType, 20) || "礼金" : null,
+        updatedAt: new Date().toISOString(),
+      })
       .where(
         and(
           eq(ledgerEntries.id, id),
-          eq(ledgerEntries.kind, "large_expense"),
-          or(
-            eq(ledgerEntries.owner, role),
-            eq(ledgerEntries.owner, "family"),
-          ),
+          eq(ledgerEntries.kind, kind),
+          or(eq(ledgerEntries.owner, role), eq(ledgerEntries.owner, "family")),
         ),
       )
       .returning();

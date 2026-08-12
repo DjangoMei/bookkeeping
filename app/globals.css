@@ -415,6 +415,7 @@ h1, h2, .brand strong, .login-brand strong, .metric-card > strong, .page-banner 
 .ownership-summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 24px; color: var(--muted); background: var(--cream-deep); border-top: 1px dashed rgba(129,38,49,.28); }
 .ownership-summary strong { color: var(--red-dark); font-size: 10px; }
 .ownership-summary span { font-size: 9px; }
+.child-summary { background: #f8e7e3; }
 .outline-button, .cancel-button { padding: 9px 14px; cursor: pointer; color: var(--red-dark); background: var(--cream); border: 1.5px solid var(--red-dark); border-radius: 12px 9px 13px 10px; font-size: 10px; font-weight: 900; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 10px; }
@@ -429,6 +430,11 @@ td small { max-width: 300px; margin-top: 3px; color: var(--muted); font-size: 8p
 .owner-select { min-width: 88px; padding: 5px 7px; color: var(--ink); background: #fffefa; border: 1px solid var(--line); border-radius: 6px; font-size: 10px; }
 .owner-select:focus { border-color: var(--blue-deep); outline: 2px solid rgba(117,169,195,.2); }
 .owner-select:disabled { opacity: .55; }
+.payer { display: inline-block; padding: 4px 8px; white-space: nowrap; color: #466f83; background: var(--blue-soft); border: 1px solid rgba(70,111,131,.35); border-radius: 16px; font-size: 8px; }
+.payer.mother { color: var(--red-dark); background: #f7e1ad; border-color: rgba(129,38,49,.35); }
+.edit-button, .delete-button { vertical-align: middle; }
+.edit-button { min-width: 29px; height: 27px; margin-right: 2px; padding: 0 6px; cursor: pointer; color: #466f83; background: transparent; border: 1px solid transparent; border-radius: 12px; font-size: 9px; font-weight: 800; }
+.edit-button:hover { background: var(--blue-soft); border-color: var(--blue-deep); }
 .delete-button { width: 27px; height: 27px; cursor: pointer; color: var(--red); background: transparent; border: 1px solid transparent; border-radius: 50%; font-size: 17px; }
 .delete-button:hover { background: #fee1df; border-color: var(--red); }
 .empty { min-height: 240px; display: flex; align-items: center; justify-content: center; gap: 20px; padding: 25px; color: var(--muted); text-align: left; }

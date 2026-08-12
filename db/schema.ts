@@ -12,6 +12,7 @@ export const ledgerEntries = sqliteTable("ledger_entries", {
   category: text("category").notNull().default("其他"),
   amountCents: integer("amount_cents").notNull().default(0),
   detail: text("detail").notNull().default(""),
+  payer: text("payer").notNull().default("family"),
   giftType: text("gift_type"),
   source: text("source").notNull().default("manual"),
   createdByRole: text("created_by_role").notNull().default("system"),

@@ -168,10 +168,32 @@ test("keeps secondary pages in one explicit column without inherited overview ar
 test("maps browser back and forward navigation to ledger page levels", async () => {
   const client = await readFile(new URL("app/ledger-app.tsx", projectRoot), "utf8");
 
-  assert.match(client, /window\.history\.replaceState\(\{ ledgerView: true, active: "overview", modal: null \}/);
+  assert.match(client, /window\.history\.replaceState\(\{ ledgerView: true, active: "overview", modal: null, editId: null \}/);
   assert.match(client, /window\.history\.replaceState\(nextState/);
   assert.match(client, /window\.history\.pushState\(nextState/);
-  assert.match(client, /window\.history\.pushState\(\{ ledgerView: true, active, modal: nextKind \}/);
+  assert.match(client, /window\.history\.pushState\(\{ ledgerView: true, active, modal: nextKind, editId: null \}/);
   assert.match(client, /window\.addEventListener\("popstate", handlePopState\)/);
   assert.match(client, /if \(current\?\.modal\) window\.history\.back\(\)/);
+});
+
+test("allows editing records and tracks mother-paid child expenses", async () => {
+  const [client, route, schema, db, seed, migration] = await Promise.all([
+    readFile(new URL("app/ledger-app.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/api/ledger/route.ts", projectRoot), "utf8"),
+    readFile(new URL("db/schema.ts", projectRoot), "utf8"),
+    readFile(new URL("db/index.ts", projectRoot), "utf8"),
+    readFile(new URL("db/feishu-seed.ts", projectRoot), "utf8"),
+    readFile(new URL("drizzle/0002_slippery_random.sql", projectRoot), "utf8"),
+  ]);
+
+  assert.match(client, /function openEdit\(entry: Entry\)/);
+  assert.match(client, /method: editingId \? "PATCH" : "POST"/);
+  assert.match(client, /妈妈支付/);
+  assert.match(client, /childMotherThisYear/);
+  assert.match(route, /payer: kind === "child_expense"/);
+  assert.match(schema, /payer: text\("payer"\)/);
+  assert.match(db, /detail LIKE '%妈妈%'/);
+  assert.match(migration, /detail` LIKE '%妈妈%'/);
+  assert.match(seed, /detail\?\.includes\("妈妈"\) \? "mother" : "family"/);
+  assert.match(migration, /ADD `payer` text DEFAULT 'family' NOT NULL/);
 });
