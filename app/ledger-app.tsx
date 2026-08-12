@@ -28,6 +28,12 @@ type Entry = {
   createdByRole: Role | "system";
 };
 
+type LedgerHistoryState = {
+  ledgerView: true;
+  active: Kind;
+  modal: Exclude<Kind, "overview"> | null;
+};
+
 const tabs: Array<{ id: Kind; label: string; mark: string; english: string }> = [
   { id: "overview", label: "首页", mark: "⌂", english: "HOME" },
   { id: "income", label: "收入", mark: "¥", english: "INCOME" },
@@ -57,6 +63,16 @@ const mascotByPage: Record<Exclude<Kind, "overview">, { src: string; alt: string
   abnormal_month: { src: "/mascot-cutouts/08-crying.png", second: "/mascot-cutouts/09-angry.png", alt: "可乐哭哭和生气的表情", note: "偶尔超支也没关系，记清楚就好" },
   gift: { src: "/mascot-cutouts/07-eating-cake.png", alt: "可乐开心地吃蛋糕", note: "把甜甜的人情往来认真记住" },
 };
+
+function ledgerHistoryState(value: unknown): LedgerHistoryState | null {
+  if (!value || typeof value !== "object") return null;
+  const state = value as Partial<LedgerHistoryState>;
+  const activeExists = tabs.some((tab) => tab.id === state.active);
+  const modalExists = state.modal === null || tabs.some((tab) => tab.id === state.modal && tab.id !== "overview");
+  return state.ledgerView === true && activeExists && modalExists
+    ? state as LedgerHistoryState
+    : null;
+}
 
 function money(cents: number) {
   return new Intl.NumberFormat("zh-CN", {
@@ -174,6 +190,36 @@ export default function LedgerApp() {
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (!authenticated) return;
+
+    function applyHistoryState(value: unknown) {
+      const state = ledgerHistoryState(value);
+      if (!state) return;
+      setActive(state.active);
+      setModalOpen(state.modal !== null);
+      if (state.modal) setKindToAdd(state.modal);
+      setNotice("");
+    }
+
+    const current = ledgerHistoryState(window.history.state);
+    let initialStateTimer: number | undefined;
+    if (current) {
+      initialStateTimer = window.setTimeout(() => applyHistoryState(current), 0);
+    } else {
+      window.history.replaceState({ ledgerView: true, active: "overview", modal: null } satisfies LedgerHistoryState, "");
+    }
+
+    function handlePopState(event: PopStateEvent) {
+      applyHistoryState(event.state);
+    }
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      if (initialStateTimer !== undefined) window.clearTimeout(initialStateTimer);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [authenticated]);
+
   const cycle = currentCycle();
   const largeEntries = entries.filter(
     (entry) =>
@@ -205,10 +251,31 @@ export default function LedgerApp() {
       : entriesVisibleToRole.filter((entry) => entry.kind === active);
   }, [active, entries, role]);
 
+  function navigateTo(next: Kind) {
+    if (next === active && !modalOpen) return;
+    const nextState = { ledgerView: true, active: next, modal: null } satisfies LedgerHistoryState;
+    if (active !== "overview" && next !== "overview" && !modalOpen) {
+      window.history.replaceState(nextState, "");
+    } else {
+      window.history.pushState(nextState, "");
+    }
+    setActive(next);
+    setModalOpen(false);
+    setNotice("");
+  }
+
   function openAdd(kind?: Exclude<Kind, "overview">) {
-    setKindToAdd(kind ?? (active === "overview" ? "income" : active));
+    const nextKind = kind ?? (active === "overview" ? "income" : active);
+    window.history.pushState({ ledgerView: true, active, modal: nextKind } satisfies LedgerHistoryState, "");
+    setKindToAdd(nextKind);
     setModalOpen(true);
     setNotice("");
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    const current = ledgerHistoryState(window.history.state);
+    if (current?.modal) window.history.back();
   }
 
   async function saveEntry(event: FormEvent<HTMLFormElement>) {
@@ -223,7 +290,7 @@ export default function LedgerApp() {
       });
       const data = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(data.error || "保存失败");
-      setModalOpen(false);
+      closeModal();
       await load();
       setNotice("叮！这笔已经收进 Cola 小账本啦。");
     } catch (error) {
@@ -289,7 +356,10 @@ export default function LedgerApp() {
 
   async function logout() {
     await fetch(withBasePath("/api/session"), { method: "DELETE" });
+    window.history.replaceState({ ledgerView: true, active: "overview", modal: null } satisfies LedgerHistoryState, "");
     setEntries([]);
+    setActive("overview");
+    setModalOpen(false);
     setAuthenticated(false);
     setPassphrase("");
     setNotice("");
@@ -355,7 +425,7 @@ export default function LedgerApp() {
         </div>
         <nav aria-label="账本功能">
           {tabs.map((tab) => (
-            <button className={active === tab.id ? "nav-item active" : "nav-item"} key={tab.id} onClick={() => setActive(tab.id)} type="button">
+            <button className={active === tab.id ? "nav-item active" : "nav-item"} key={tab.id} onClick={() => navigateTo(tab.id)} type="button">
               <span className="nav-mark">{tab.mark}</span>
               <span className="nav-copy"><b>{tab.label}</b><small>{tab.english}</small></span>
             </button>
@@ -413,7 +483,7 @@ export default function LedgerApp() {
 
             <div className="overview-grid">
               <section className="panel budget-panel">
-                <div className="panel-head"><div><span className="section-kicker">BIG BUY PLAN</span><h2>大件愿望进度</h2></div><button onClick={() => setActive("large_expense")} type="button">查看明细 ↗</button></div>
+                <div className="panel-head"><div><span className="section-kicker">BIG BUY PLAN</span><h2>大件愿望进度</h2></div><button onClick={() => navigateTo("large_expense")} type="button">查看明细 ↗</button></div>
                 <div className="budget-visual">
                   <div className="ring" style={{ "--p": `${Math.min((largeUsed / 5_000_000) * 100, 100)}%` } as React.CSSProperties}><div><strong>{Math.round((largeUsed / 5_000_000) * 100)}%</strong><span>已经用掉</span></div></div>
                   <div className="budget-copy"><p>本周期的小目标</p><strong>¥50,000</strong><div className="budget-line"><span>已经记下</span><b>{largeEntries.length} 笔</b></div><div className="budget-line"><span>现在状态</span><b className={largeUsed > 5_000_000 ? "danger" : "healthy"}>{largeUsed > 5_000_000 ? "哎呀，超额啦" : "稳稳的！"}</b></div></div>
@@ -517,9 +587,9 @@ export default function LedgerApp() {
       </section>
 
       {modalOpen && (
-        <div className="modal-backdrop" onMouseDown={() => setModalOpen(false)}>
+        <div className="modal-backdrop" onMouseDown={closeModal}>
           <section aria-labelledby="entry-form-title" aria-modal="true" className="modal" onMouseDown={(event) => event.stopPropagation()} role="dialog">
-            <div className="modal-head"><div><span className="section-kicker">NEW LITTLE NOTE</span><h2 id="entry-form-title">{formMeta.title}</h2><p>{formMeta.description}</p></div><button aria-label="关闭" onClick={() => setModalOpen(false)} type="button">×</button></div>
+            <div className="modal-head"><div><span className="section-kicker">NEW LITTLE NOTE</span><h2 id="entry-form-title">{formMeta.title}</h2><p>{formMeta.description}</p></div><button aria-label="关闭" onClick={closeModal} type="button">×</button></div>
             <form onSubmit={saveEntry}>
               <input name="kind" type="hidden" value={kindToAdd} />
               <div className="form-grid">
@@ -537,7 +607,7 @@ export default function LedgerApp() {
                 {kindToAdd === "gift" && <Field label="形式"><select name="giftType"><option>礼金</option><option>礼物</option><option>礼金＋礼物</option></select></Field>}
                 <Field label="备注" wide><textarea name="detail" placeholder="写下原因、场合，或者一句可爱的小备注" rows={3} /></Field>
               </div>
-              <div className="form-foot"><span>{kindToAdd === "income" || kindToAdd === "large_expense" ? `会收进 ${currentRole.name} 的私人小口袋` : "会收进我们的家庭共享账本"}</span><div><button className="cancel-button" onClick={() => setModalOpen(false)} type="button">等等再记</button><button className="primary-button" disabled={saving} type="submit">{saving ? "正在贴进账本…" : "好啦，保存！"}</button></div></div>
+              <div className="form-foot"><span>{kindToAdd === "income" || kindToAdd === "large_expense" ? `会收进 ${currentRole.name} 的私人小口袋` : "会收进我们的家庭共享账本"}</span><div><button className="cancel-button" onClick={closeModal} type="button">等等再记</button><button className="primary-button" disabled={saving} type="submit">{saving ? "正在贴进账本…" : "好啦，保存！"}</button></div></div>
             </form>
           </section>
         </div>

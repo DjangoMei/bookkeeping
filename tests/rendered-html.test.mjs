@@ -164,3 +164,14 @@ test("keeps secondary pages in one explicit column without inherited overview ar
   assert.match(css, /\.content-detail \.records-panel\s*\{\s*grid-area:\s*detail-records/);
   assert.doesNotMatch(client, /这是同一个可爱的小朋友/);
 });
+
+test("maps browser back and forward navigation to ledger page levels", async () => {
+  const client = await readFile(new URL("app/ledger-app.tsx", projectRoot), "utf8");
+
+  assert.match(client, /window\.history\.replaceState\(\{ ledgerView: true, active: "overview", modal: null \}/);
+  assert.match(client, /window\.history\.replaceState\(nextState/);
+  assert.match(client, /window\.history\.pushState\(nextState/);
+  assert.match(client, /window\.history\.pushState\(\{ ledgerView: true, active, modal: nextKind \}/);
+  assert.match(client, /window\.addEventListener\("popstate", handlePopState\)/);
+  assert.match(client, /if \(current\?\.modal\) window\.history\.back\(\)/);
+});
