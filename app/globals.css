@@ -383,6 +383,14 @@ h1, h2, .brand strong, .login-brand strong, .metric-card > strong, .page-banner 
 .metric-stamp { position: absolute; right: -8px; bottom: -22px; color: rgba(129,38,49,.12); font: 900 74px var(--comic); transform: rotate(-8deg); }
 .metric-card.red .metric-stamp { color: rgba(255,249,233,.13); }
 
+.top-actions { display: flex; align-items: center; gap: 9px; }
+.family-shortcuts { display: flex; gap: 7px; }
+.family-shortcuts button { min-width: 0; display: grid; grid-template-columns: 30px minmax(0,1fr); align-items: center; gap: 2px 8px; padding: 8px 10px; pointer-events: auto; cursor: pointer; color: var(--ink); background: rgba(255,252,244,.96); border: 1px solid var(--red-dark); border-radius: 14px 11px 13px 10px; box-shadow: 2px 3px 0 rgba(129,38,49,.1); text-align: left; }
+.family-shortcuts button > span { grid-row: 1 / 3; display: grid; width: 30px; height: 30px; place-items: center; color: var(--cream); background: var(--red); border-radius: 50%; font-weight: 900; }
+.family-shortcuts div { min-width: 0; display: grid; }
+.family-shortcuts small { font-size: 6px; letter-spacing: .08em; }
+.family-shortcuts strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+
 .overview-grid { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(340px,.9fr); gap: 15px; margin-top: 18px; }
 .panel { background: rgba(255,252,244,.92); border: 1.5px solid var(--red-dark); border-radius: 24px 17px 22px 19px; box-shadow: 5px 6px 0 rgba(129,38,49,.1); }
 .budget-panel, .quick-panel { padding: 23px 24px; }
@@ -411,6 +419,54 @@ h1, h2, .brand strong, .login-brand strong, .metric-card > strong, .page-banner 
 .quick-grid small { color: var(--blue-deep); font: 800 7px var(--comic); letter-spacing: .08em; }
 
 .records-panel { margin-top: 18px; overflow: hidden; }
+
+.finance-workspace { grid-column: 1; grid-row: 2 / 4; min-height: 0; display: grid; grid-template-columns: 270px minmax(0,1fr); gap: 15px; }
+.finance-summary, .project-hero, .finance-board, .project-tabs { border: 1.5px solid var(--red-dark); box-shadow: 5px 6px 0 rgba(129,38,49,.1); }
+.finance-summary { align-self: start; padding: 24px; background: var(--blue); border-radius: 26px 19px 24px 20px; }
+.finance-summary > span { display: block; font-size: 8px; font-weight: 900; letter-spacing: .1em; }
+.finance-summary > strong { display: block; margin: 20px 0 8px; color: var(--red-dark); font-size: clamp(25px,2.5vw,38px); overflow-wrap: anywhere; }
+.finance-summary small { display: block; color: var(--muted); line-height: 1.5; }
+.finance-summary button, .project-actions button, .project-tabs button { cursor: pointer; color: var(--red-dark); background: var(--cream); border: 1px solid var(--red-dark); border-radius: 12px 9px 13px 10px; font-weight: 900; }
+.finance-summary button { width: 100%; margin-top: 22px; padding: 11px; }
+.finance-board { min-height: 0; overflow: auto; background: rgba(255,252,244,.94); border-radius: 24px 17px 22px 19px; }
+.finance-board-head { padding: 20px 22px 14px; }
+.finance-board-head h2 { color: var(--red-dark); font-size: 22px; }
+.account-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding: 0 18px 18px; }
+.account-card { min-width: 0; padding: 16px; background: var(--cream-deep); border: 1px solid rgba(129,38,49,.55); border-radius: 18px 14px 17px 13px; }
+.account-card > span { color: var(--red); font-size: 8px; font-weight: 900; }
+.account-card h3 { margin-top: 7px; font-size: 14px; }
+.account-card > strong { display: block; margin: 8px 0; color: var(--red-dark); font-size: 21px; overflow-wrap: anywhere; }
+.account-card p { min-height: 27px; color: var(--muted); font-size: 9px; }
+.account-card div { display: flex; gap: 8px; margin-top: 12px; }
+.account-card button { padding: 5px 9px; cursor: pointer; color: var(--red-dark); background: transparent; border: 1px solid var(--line); border-radius: 8px; font-size: 8px; }
+.finance-message { position: absolute; z-index: 3; right: 25px; margin: 10px; padding: 8px 11px; background: #fff0b7; border: 1px dashed var(--red); border-radius: 10px; font-size: 9px; }
+.finance-empty { padding: 30px; color: var(--muted); text-align: center; }
+.projects-workspace { grid-template-columns: 200px minmax(0,1fr); grid-template-rows: minmax(160px,.42fr) minmax(260px,1fr); }
+.project-tabs { grid-row: 1 / 3; min-height: 0; overflow: auto; padding: 12px; background: var(--blue-soft); border-radius: 22px 16px 20px 17px; }
+.project-tabs button { width: 100%; display: block; margin-bottom: 8px; padding: 11px; text-align: left; }
+.project-tabs button.active { color: var(--cream); background: var(--red); }
+.project-tabs button strong, .project-tabs button small { display: block; }
+.project-tabs button small { margin-top: 3px; opacity: .68; font-size: 7px; }
+.project-tabs .new-project { text-align: center; background: var(--paper); border-style: dashed; }
+.project-hero { min-width: 0; position: relative; display: grid; grid-template-columns: minmax(180px,.8fr) minmax(320px,1.2fr); gap: 15px; padding: 20px 22px 28px; background: var(--cream-deep); border-radius: 24px 18px 22px 19px; }
+.project-hero h2 { margin: 5px 0; color: var(--red-dark); font-size: 25px; }
+.project-hero p { color: var(--muted); font-size: 9px; }
+.project-numbers { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.project-numbers div { min-width: 0; padding: 10px; background: rgba(255,255,255,.58); border-radius: 12px; }
+.project-numbers span, .project-numbers strong { display: block; }
+.project-numbers span { font-size: 7px; }
+.project-numbers strong { margin-top: 4px; color: var(--red-dark); font-size: 14px; overflow-wrap: anywhere; }
+.project-progress { position: absolute; left: 22px; right: 22px; bottom: 13px; height: 6px; overflow: hidden; background: var(--blue-soft); border-radius: 10px; }
+.project-progress i { display: block; height: 100%; background: var(--red); }
+.project-actions { position: absolute; right: 22px; top: 15px; display: flex; gap: 7px; transform: translateY(-100%); }
+.project-actions button { padding: 6px 9px; font-size: 8px; }
+.project-records { grid-column: 2; }
+.project-records table { min-width: 620px; }
+.finance-editor { position: fixed; z-index: 60; inset: 50% auto auto 50%; width: min(620px,calc(100vw - 30px)); max-height: calc(100vh - 30px); overflow: auto; padding: 22px; background: var(--paper); border: 2px solid var(--red-dark); border-radius: 24px 18px 22px 19px; box-shadow: 0 0 0 100vmax rgba(50,35,33,.36), 8px 9px 0 rgba(129,38,49,.2); transform: translate(-50%,-50%); }
+.finance-editor-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.finance-editor-head h2 { color: var(--red-dark); }
+.finance-editor-head button { padding: 4px 10px; cursor: pointer; background: transparent; border: 0; font-size: 24px; }
+.danger-action { grid-column: 1 / -1; justify-self: start; padding: 7px 10px; cursor: pointer; color: var(--red); background: transparent; border: 1px solid var(--red); border-radius: 8px; }
 .records-head { padding: 22px 24px 17px; }
 .ownership-summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 24px; color: var(--muted); background: var(--cream-deep); border-top: 1px dashed rgba(129,38,49,.28); }
 .ownership-summary strong { color: var(--red-dark); font-size: 10px; }
@@ -593,6 +649,7 @@ td strong, td small { overflow-wrap: anywhere; }
   .overview-grid { min-height: 430px; }
   .records-panel { min-height: 360px; }
   .page-banner { min-height: 220px; }
+  .finance-workspace { min-height: 650px; }
 }
 
 @media (max-width: 780px) {
@@ -607,7 +664,7 @@ td strong, td small { overflow-wrap: anywhere; }
   .login-card { padding: 28px 22px 24px; }
   .sidebar { left: 10px; right: 10px; top: auto; bottom: 8px; width: auto; height: 62px; flex-direction: row; align-items: center; padding: 7px; border: 1.5px solid var(--red-dark); border-radius: 25px; box-shadow: 5px 6px 0 rgba(129,38,49,.16); }
   .brand, .sidebar-mascot, .sidebar-note, .account { display: none; }
-  .sidebar nav { width: 100%; display: grid; grid-template-columns: repeat(6,1fr); gap: 2px; }
+  .sidebar nav { width: 100%; display: grid; grid-template-columns: repeat(8,1fr); gap: 2px; }
   .nav-item { min-width: 0; justify-content: center; padding: 5px 2px; border-radius: 15px; }
   .nav-item:hover { transform: none; }
   .nav-item.active { transform: none; box-shadow: none; }
@@ -617,6 +674,7 @@ td strong, td small { overflow-wrap: anywhere; }
   .shell { height: auto; min-height: 100vh; overflow: visible; }
   .content { height: auto; min-height: 100vh; margin-left: 0; padding: 27px 17px 35px; overflow: visible; }
   .topbar { align-items: center; }
+  .top-actions { align-items: flex-end; flex-direction: column-reverse; }
   .topbar h1 { font-size: 29px; }
   .subtitle { font-size: 10px; }
   .primary-button { padding: 10px 12px; }
@@ -636,6 +694,12 @@ td strong, td small { overflow-wrap: anywhere; }
   .budget-visual { grid-template-columns: 115px 1fr; gap: 18px; }
   .quick-grid { grid-template-columns: repeat(2,1fr); }
   .records-panel { overflow: visible; }
+  .finance-workspace, .projects-workspace { display: flex; flex-direction: column; min-height: 0; }
+  .finance-summary, .project-tabs { width: 100%; }
+  .project-tabs { display: flex; overflow-x: auto; }
+  .project-tabs button { min-width: 130px; margin: 0 6px 0 0; }
+  .project-hero { grid-template-columns: 1fr; padding-top: 30px; }
+  .project-records { width: 100%; min-height: 330px; }
   .table-wrap { margin: 0 -1px -1px; overflow-x: auto; border-radius: 0 0 20px 18px; }
   table { min-width: 690px; }
 }
@@ -658,6 +722,9 @@ td strong, td small { overflow-wrap: anywhere; }
   .form-foot > div { justify-content: flex-end; }
   .ownership-summary { align-items: flex-start; flex-direction: column; padding: 10px 16px; }
   .empty { flex-direction: column; text-align: center; }
+  .account-grid { grid-template-columns: 1fr; }
+  .project-numbers { grid-template-columns: 1fr; }
+  .family-shortcuts { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

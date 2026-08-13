@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { withBasePath } from "./base-path";
 import { greetingForHour } from "./time-greeting";
+import FamilyFinance, { type FamilyFinanceData } from "./family-finance";
 
 type Role = "zcy" | "django";
 type Kind =
@@ -11,11 +12,15 @@ type Kind =
   | "large_expense"
   | "child_expense"
   | "abnormal_month"
-  | "gift";
+  | "gift"
+  | "savings"
+  | "projects";
+
+type LedgerKind = Exclude<Kind, "overview" | "savings" | "projects">;
 
 type Entry = {
   id: number;
-  kind: Exclude<Kind, "overview">;
+  kind: LedgerKind;
   owner: Role | "family";
   entryDate: string;
   month: string | null;
@@ -32,7 +37,7 @@ type Entry = {
 type LedgerHistoryState = {
   ledgerView: true;
   active: Kind;
-  modal: Exclude<Kind, "overview"> | null;
+  modal: LedgerKind | null;
   editId: number | null;
 };
 
@@ -43,6 +48,8 @@ const tabs: Array<{ id: Kind; label: string; mark: string; english: string }> = 
   { id: "child_expense", label: "小宝花费", mark: "♡", english: "KIDDO" },
   { id: "abnormal_month", label: "特别月份", mark: "!", english: "SPECIAL" },
   { id: "gift", label: "人情往来", mark: "✦", english: "GIFTS" },
+  { id: "savings", label: "家庭存款", mark: "¥", english: "SAVINGS" },
+  { id: "projects", label: "大额专项", mark: "⌂", english: "PROJECTS" },
 ];
 
 const copy: Record<Exclude<Kind, "overview">, { title: string; description: string }> = {
@@ -51,9 +58,11 @@ const copy: Record<Exclude<Kind, "overview">, { title: string; description: stri
   child_expense: { title: "小宝成长簿", description: "教育、医疗、兴趣和可爱的日常，都记在这里。" },
   abnormal_month: { title: "特别月份", description: "开销超过四千元的月份，留下一张小纸条。" },
   gift: { title: "人情小本本", description: "礼金、礼物、对象和场合，一个都不忘。" },
+  savings: { title: "家庭存款", description: "余额宝、银行卡、公积金、期权和其他可支配资金，两个人一起维护。" },
+  projects: { title: "大额项目专项", description: "为装修等家庭大目标建立预算，逐笔记录花费和剩余。" },
 };
 
-const categoryOptions: Record<Exclude<Kind, "overview">, string[]> = {
+const categoryOptions: Record<LedgerKind, string[]> = {
   income: ["工资", "额外收入"],
   large_expense: ["家电", "旅行", "家居", "医疗", "其他"],
   child_expense: ["教育", "医疗", "兴趣", "日常", "其他"],
@@ -72,13 +81,15 @@ const mascotByPage: Record<Exclude<Kind, "overview">, { src: string; alt: string
   child_expense: { src: "/mascot-cutouts/06-bunny-tight-hug-v2.png", alt: "可乐贴脸抱紧兔兔玩偶", note: "小宝的成长，每一笔都值得收藏" },
   abnormal_month: { src: "/mascot-cutouts/08-crying.png", second: "/mascot-cutouts/09-angry.png", alt: "可乐哭哭和生气的表情", note: "偶尔超支也没关系，记清楚就好" },
   gift: { src: "/mascot-cutouts/07-eating-cake.png", alt: "可乐开心地吃蛋糕", note: "把甜甜的人情往来认真记住" },
+  savings: { src: "/mascot-cutouts/01-playing-blocks.png", alt: "可乐开心地玩积木", note: "一块一块，把我们家的小金库搭起来" },
+  projects: { src: "/mascot-cutouts/03-drawing-playful-v2.png", alt: "可乐认真画画", note: "大项目慢慢画，也会变成理想的家" },
 };
 
 function ledgerHistoryState(value: unknown): LedgerHistoryState | null {
   if (!value || typeof value !== "object") return null;
   const state = value as Partial<LedgerHistoryState>;
   const activeExists = tabs.some((tab) => tab.id === state.active);
-  const modalExists = state.modal === null || tabs.some((tab) => tab.id === state.modal && tab.id !== "overview");
+  const modalExists = state.modal === null || tabs.some((tab) => tab.id === state.modal && tab.id !== "overview" && tab.id !== "savings" && tab.id !== "projects");
   const editIdExists = state.editId === undefined || state.editId === null || (Number.isInteger(state.editId) && state.editId > 0);
   return state.ledgerView === true && activeExists && modalExists
     && editIdExists
@@ -152,6 +163,7 @@ export default function LedgerApp() {
   const [active, setActive] = useState<Kind>("overview");
   const [role, setRole] = useState<Role>("zcy");
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [familyFinance, setFamilyFinance] = useState<FamilyFinanceData>({ savings: [], projects: [], expenses: [] });
   const [loading, setLoading] = useState(true);
   const [sessionChecking, setSessionChecking] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
@@ -164,7 +176,7 @@ export default function LedgerApp() {
   const [saving, setSaving] = useState(false);
   const [assigningId, setAssigningId] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
-  const [kindToAdd, setKindToAdd] = useState<Exclude<Kind, "overview">>("income");
+  const [kindToAdd, setKindToAdd] = useState<LedgerKind>("income");
   const [greeting, setGreeting] = useState("今天也要把小日子记得明明白白！");
   const today = new Date().toISOString().slice(0, 10);
 
@@ -189,10 +201,17 @@ export default function LedgerApp() {
     }
   }
 
+  async function loadFamilyFinance() {
+    const response = await fetch(withBasePath("/api/family-finance"));
+    if (!response.ok) return;
+    setFamilyFinance(await response.json() as FamilyFinanceData);
+  }
+
   useEffect(() => {
     async function initialize() {
       const hasSession = await load({ allowUnauthenticated: true });
       setAuthenticated(hasSession);
+      if (hasSession) await loadFamilyFinance();
       setSessionChecking(false);
     }
     void initialize();
@@ -256,6 +275,8 @@ export default function LedgerApp() {
   const childMotherThisYear = entries.filter((entry) => entry.kind === "child_expense" && entry.payer === "mother" && entry.entryDate.startsWith(year)).reduce((sum, entry) => sum + entry.amountCents, 0);
   const abnormalCount = entries.filter((entry) => entry.kind === "abnormal_month" && entry.entryDate.startsWith(year)).length;
   const giftsThisYear = entries.filter((entry) => entry.kind === "gift" && entry.entryDate.startsWith(year)).reduce((sum, entry) => sum + entry.amountCents, 0);
+  const savingsTotal = familyFinance.savings.reduce((sum, item) => sum + item.balanceCents, 0);
+  const projectsSpent = familyFinance.expenses.reduce((sum, item) => sum + item.amountCents, 0);
 
   const visibleEntries = useMemo(() => {
     const entriesVisibleToRole = entries.filter(
@@ -284,8 +305,9 @@ export default function LedgerApp() {
     setNotice("");
   }
 
-  function openAdd(kind?: Exclude<Kind, "overview">) {
+  function openAdd(kind?: LedgerKind) {
     const nextKind = kind ?? (active === "overview" ? "income" : active);
+    if (nextKind === "savings" || nextKind === "projects") return;
     window.history.pushState({ ledgerView: true, active, modal: nextKind, editId: null } satisfies LedgerHistoryState, "");
     setKindToAdd(nextKind);
     setEditingId(null);
@@ -377,6 +399,7 @@ export default function LedgerApp() {
       setAuthenticated(true);
       setPassphrase("");
       await load();
+      await loadFamilyFinance();
     } catch (error) {
       setLoginError(error instanceof Error ? error.message : "登录失败");
     } finally {
@@ -388,6 +411,7 @@ export default function LedgerApp() {
     await fetch(withBasePath("/api/session"), { method: "DELETE" });
     window.history.replaceState({ ledgerView: true, active: "overview", modal: null, editId: null } satisfies LedgerHistoryState, "");
     setEntries([]);
+    setFamilyFinance({ savings: [], projects: [], expenses: [] });
     setActive("overview");
     setModalOpen(false);
     setEditingId(null);
@@ -459,7 +483,7 @@ export default function LedgerApp() {
           <div><strong>Cola</strong><span>可乐 · 小宝</span></div>
         </div>
         <nav aria-label="账本功能">
-          {tabs.map((tab) => (
+          {tabs.filter((tab) => tab.id !== "savings" && tab.id !== "projects").map((tab) => (
             <button className={active === tab.id ? "nav-item active" : "nav-item"} key={tab.id} onClick={() => navigateTo(tab.id)} type="button">
               <span className="nav-mark">{tab.mark}</span>
               <span className="nav-copy"><b>{tab.label}</b><small>{tab.english}</small></span>
@@ -489,7 +513,13 @@ export default function LedgerApp() {
             <h1>{activeMeta?.title ?? greeting}</h1>
             <p className="subtitle">{activeMeta?.description ?? `嗨，${currentRole.name}！把每一笔都变成可爱的生活碎片。`}</p>
           </div>
-          <button className="primary-button" onClick={() => openAdd()} type="button"><span>＋</span> 记一笔</button>
+          <div className="top-actions">
+            {active === "overview" && <div className="family-shortcuts" aria-label="家庭共享模块">
+              <button onClick={() => navigateTo("savings")} type="button"><span>¥</span><div><small>家庭存款</small><strong>{money(savingsTotal)}</strong></div></button>
+              <button onClick={() => navigateTo("projects")} type="button"><span>⌂</span><div><small>大额专项</small><strong>{money(projectsSpent)}</strong></div></button>
+            </div>}
+            {active !== "savings" && active !== "projects" && <button className="primary-button" onClick={() => openAdd()} type="button"><span>＋</span> 记一笔</button>}
+          </div>
         </header>
 
         {notice && <div aria-live="polite" className="notice" role="status">✦ {notice}</div>}
@@ -530,14 +560,16 @@ export default function LedgerApp() {
                   <img src={withBasePath("/mascot-cutouts/03-drawing-playful-v2.png")} alt="" height={1254} loading="lazy" width={1254} />
                 </div>
                 <div className="quick-grid">
-                  {tabs.slice(2).map((tab) => <button key={tab.id} onClick={() => openAdd(tab.id as Exclude<Kind, "overview">)} type="button"><span>{tab.mark}</span><strong>{tab.label}</strong><small>{tab.english}</small></button>)}
+                  {tabs.slice(2, 6).map((tab) => <button key={tab.id} onClick={() => openAdd(tab.id as LedgerKind)} type="button"><span>{tab.mark}</span><strong>{tab.label}</strong><small>{tab.english}</small></button>)}
                 </div>
               </section>
             </div>
           </>
         )}
 
-        {activeMascot && (
+        {(active === "savings" || active === "projects") && <FamilyFinance data={familyFinance} onChange={loadFamilyFinance} view={active} />}
+
+        {activeMascot && active !== "savings" && active !== "projects" && (
           <section className="page-banner">
             <div>
               <span className="section-kicker">COLA&apos;S LITTLE MOMENT</span>
@@ -550,7 +582,7 @@ export default function LedgerApp() {
           </section>
         )}
 
-        <section className={active === "overview" ? "panel records-panel overview-records" : "panel records-panel"}>
+        {active !== "savings" && active !== "projects" && <section className={active === "overview" ? "panel records-panel overview-records" : "panel records-panel"}>
           <div className="panel-head records-head">
             <div><span className="section-kicker">{active === "overview" ? "RECENT NOTES" : "ALL NOTES"}</span><h2>{active === "overview" ? "最近的小账目" : `${activeMeta?.title}记录`}</h2></div>
             {active !== "overview" && <button className="outline-button" onClick={() => openAdd()} type="button">＋ 新增</button>}
@@ -632,7 +664,7 @@ export default function LedgerApp() {
               </table>
             </div>
           )}
-        </section>
+        </section>}
       </section>
 
       {modalOpen && (

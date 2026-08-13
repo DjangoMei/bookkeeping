@@ -197,3 +197,29 @@ test("allows editing records and tracks mother-paid child expenses", async () =>
   assert.match(seed, /detail\?\.includes\("妈妈"\) \? "mother" : "family"/);
   assert.match(migration, /ADD `payer` text DEFAULT 'family' NOT NULL/);
 });
+
+test("adds shared savings and large project workspaces", async () => {
+  const [client, finance, route, schema, db, migration] = await Promise.all([
+    readFile(new URL("app/ledger-app.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/family-finance.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/api/family-finance/route.ts", projectRoot), "utf8"),
+    readFile(new URL("db/schema.ts", projectRoot), "utf8"),
+    readFile(new URL("db/index.ts", projectRoot), "utf8"),
+    readFile(new URL("drizzle/0003_certain_mystique.sql", projectRoot), "utf8"),
+  ]);
+  assert.match(client, /家庭存款/);
+  assert.match(client, /大额专项/);
+  assert.match(client, /<FamilyFinance/);
+  assert.match(finance, /余额宝/);
+  assert.match(finance, /新房装修/);
+  assert.match(finance, /记一笔专项支出/);
+  assert.match(route, /export async function PATCH/);
+  assert.match(route, /export async function DELETE/);
+  assert.match(schema, /savingsAccounts/);
+  assert.match(schema, /familyProjects/);
+  assert.match(schema, /projectExpenses/);
+  assert.match(db, /INSERT INTO family_projects/);
+  assert.match(db, /PRAGMA optimize/);
+  assert.match(migration, /CREATE TABLE `savings_accounts`/);
+  assert.match(migration, /idx_project_expenses_project_date/);
+});
