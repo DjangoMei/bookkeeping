@@ -76,13 +76,13 @@ const roleNames: Record<Role, { name: string; english: string; initial: string }
 };
 
 const mascotByPage: Record<Exclude<Kind, "overview">, { src: string; alt: string; note: string; second?: string }> = {
-  income: { src: "/mascot-cutouts/01-playing-blocks.png", alt: "可乐开心地玩积木", note: "一块一块，把小收入搭起来" },
-  large_expense: { src: "/mascot-cutouts/05-playing-ball.png", alt: "可乐开心地玩球", note: "大目标，也可以轻松慢慢来" },
-  child_expense: { src: "/mascot-cutouts/06-bunny-tight-hug-v2.png", alt: "可乐贴脸抱紧兔兔玩偶", note: "小宝的成长，每一笔都值得收藏" },
-  abnormal_month: { src: "/mascot-cutouts/08-crying.png", second: "/mascot-cutouts/09-angry.png", alt: "可乐哭哭和生气的表情", note: "偶尔超支也没关系，记清楚就好" },
-  gift: { src: "/mascot-cutouts/07-eating-cake.png", alt: "可乐开心地吃蛋糕", note: "把甜甜的人情往来认真记住" },
-  savings: { src: "/mascot-cutouts/01-playing-blocks.png", alt: "可乐开心地玩积木", note: "一块一块，把我们家的小金库搭起来" },
-  projects: { src: "/mascot-cutouts/03-drawing-playful-v2.png", alt: "可乐认真画画", note: "大项目慢慢画，也会变成理想的家" },
+  income: { src: "/mascot-cutouts/01-playing-blocks.webp", alt: "可乐开心地玩积木", note: "一块一块，把小收入搭起来" },
+  large_expense: { src: "/mascot-cutouts/05-playing-ball.webp", alt: "可乐开心地玩球", note: "大目标，也可以轻松慢慢来" },
+  child_expense: { src: "/mascot-cutouts/06-bunny-tight-hug-v2.webp", alt: "可乐贴脸抱紧兔兔玩偶", note: "小宝的成长，每一笔都值得收藏" },
+  abnormal_month: { src: "/mascot-cutouts/08-crying.webp", second: "/mascot-cutouts/09-angry.webp", alt: "可乐哭哭和生气的表情", note: "偶尔超支也没关系，记清楚就好" },
+  gift: { src: "/mascot-cutouts/07-eating-cake.webp", alt: "可乐开心地吃蛋糕", note: "把甜甜的人情往来认真记住" },
+  savings: { src: "/mascot-cutouts/01-playing-blocks.webp", alt: "可乐开心地玩积木", note: "一块一块，把我们家的小金库搭起来" },
+  projects: { src: "/mascot-cutouts/03-drawing-playful-v2.webp", alt: "可乐认真画画", note: "大项目慢慢画，也会变成理想的家" },
 };
 
 function ledgerHistoryState(value: unknown): LedgerHistoryState | null {
@@ -340,10 +340,19 @@ export default function LedgerApp({ initialRole }: { initialRole: Role | null })
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as { entry?: Entry; error?: string };
       if (!response.ok) throw new Error(data.error || "保存失败");
+      if (data.entry) {
+        setEntries((current) => {
+          const next = editingId === null
+            ? [data.entry!, ...current]
+            : current.map((entry) => entry.id === data.entry!.id ? data.entry! : entry);
+          return next.sort((left, right) =>
+            right.entryDate.localeCompare(left.entryDate) || right.id - left.id,
+          );
+        });
+      }
       closeModal();
-      await load();
       setNotice(editingId ? "这笔账已经修改好啦。" : "叮！这笔已经收进 Cola 小账本啦。");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "保存失败");
@@ -372,9 +381,11 @@ export default function LedgerApp({ initialRole }: { initialRole: Role | null })
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ owner }),
       });
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as { entry?: Entry; error?: string };
       if (!response.ok) throw new Error(data.error || "修改归属失败");
-      await load();
+      if (data.entry) {
+        setEntries((current) => current.map((entry) => entry.id === id ? data.entry! : entry));
+      }
       setNotice(`已归入 ${owner} 的大额消费`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "修改归属失败");
@@ -436,7 +447,7 @@ export default function LedgerApp({ initialRole }: { initialRole: Role | null })
         <div className="login-scribble login-scribble-two">♡ little days ♡</div>
         <section className="login-visual" aria-hidden="true">
           <div className="login-sticker">可乐的小日子</div>
-          <img src={withBasePath("/mascot-cutouts/00-character-base.png")} alt="" fetchPriority="high" height={1254} width={1254} />
+          <img src={withBasePath("/mascot-cutouts/00-character-base.webp")} alt="" fetchPriority="high" height={720} width={720} />
           <p>COZY DAYS<br />WITH COLA</p>
         </section>
         <section className="login-card">
@@ -492,7 +503,7 @@ export default function LedgerApp({ initialRole }: { initialRole: Role | null })
         </nav>
         <div className="sidebar-mascot">
           <span>翻翻今天的<br />小账本</span>
-          <img src={withBasePath("/mascot-cutouts/02-reading-picture-book.png")} alt="可乐坐着看图画书" height={1254} width={1254} />
+          <img src={withBasePath("/mascot-cutouts/02-reading-picture-book.webp")} alt="可乐坐着看图画书" height={720} loading="lazy" width={720} />
         </div>
         <div className="sidebar-note">
           <span>BIG BUY PLAN</span><strong>{cycle.label}</strong>
@@ -535,7 +546,7 @@ export default function LedgerApp({ initialRole }: { initialRole: Role | null })
               </div>
               <div className="hero-image-wrap">
                 <span aria-hidden="true" className="spark spark-one">✦</span><span aria-hidden="true" className="spark spark-two">♡</span>
-                <img src={withBasePath("/mascot-cutouts/04-watching-tv-excited-v2.png")} alt="小女孩兴奋地看电视跳舞" fetchPriority="high" height={1254} width={1254} />
+                <img src={withBasePath("/mascot-cutouts/04-watching-tv-excited-v2.webp")} alt="小女孩兴奋地看电视跳舞" fetchPriority="high" height={720} width={720} />
               </div>
             </section>
 
@@ -557,7 +568,7 @@ export default function LedgerApp({ initialRole }: { initialRole: Role | null })
               <section className="panel quick-panel">
                 <div className="panel-head"><div><span className="section-kicker">QUICK NOTES</span><h2>今天记点什么？</h2></div></div>
                 <div className="quick-mascots" aria-hidden="true">
-                  <img src={withBasePath("/mascot-cutouts/03-drawing-playful-v2.png")} alt="" height={1254} loading="lazy" width={1254} />
+                  <img src={withBasePath("/mascot-cutouts/03-drawing-playful-v2.webp")} alt="" height={720} loading="lazy" width={720} />
                 </div>
                 <div className="quick-grid">
                   {tabs.slice(2, 6).map((tab) => <button key={tab.id} onClick={() => openAdd(tab.id as LedgerKind)} type="button"><span>{tab.mark}</span><strong>{tab.label}</strong><small>{tab.english}</small></button>)}
@@ -576,8 +587,8 @@ export default function LedgerApp({ initialRole }: { initialRole: Role | null })
               <strong>{activeMascot.note}</strong>
             </div>
             <div className="page-banner-art">
-              <img src={withBasePath(activeMascot.src)} alt={activeMascot.alt} height={1254} width={1254} />
-              {activeMascot.second && <img className="page-banner-second" src={withBasePath(activeMascot.second)} alt="" height={1254} width={1254} />}
+              <img src={withBasePath(activeMascot.src)} alt={activeMascot.alt} height={720} width={720} />
+              {activeMascot.second && <img className="page-banner-second" src={withBasePath(activeMascot.second)} alt="" height={720} width={720} />}
             </div>
           </section>
         )}
@@ -602,7 +613,7 @@ export default function LedgerApp({ initialRole }: { initialRole: Role | null })
           {loading ? (
             <div className="empty">正在翻找小纸条…</div>
           ) : visibleEntries.length === 0 ? (
-            <div className="empty"><img src={withBasePath(activeMascot?.src ?? "/mascot-cutouts/03-drawing-playful-v2.png")} alt={activeMascot?.alt ?? "小女孩开心画画"} height={1254} loading="lazy" width={1254} /><div><strong>这页还是空空的</strong><span>先写下第一笔，让小账本热闹起来吧！</span><button onClick={() => openAdd()} type="button">马上记一笔 →</button></div></div>
+            <div className="empty"><img src={withBasePath(activeMascot?.src ?? "/mascot-cutouts/03-drawing-playful-v2.webp")} alt={activeMascot?.alt ?? "小女孩开心画画"} height={720} loading="lazy" width={720} /><div><strong>这页还是空空的</strong><span>先写下第一笔，让小账本热闹起来吧！</span><button onClick={() => openAdd()} type="button">马上记一笔 →</button></div></div>
           ) : (
             <div className="table-wrap">
               <table>

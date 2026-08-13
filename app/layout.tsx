@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
       template: "%s · Cola",
     },
     description: "为可乐——我们爱叫的小宝——收藏生活、记录每一笔的小小家庭账本。",
-    icons: { icon: withBasePath("/mascot-scenes/00-character-base.png") },
+    icons: { icon: withBasePath("/mascot-cutouts/00-character-base.webp") },
     openGraph: {
       title: "Cola · 可乐小宝的小账本",
       description: "认真生活，开心花钱，把每一天收进小本本。",

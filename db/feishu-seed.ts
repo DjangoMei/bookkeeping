@@ -245,6 +245,23 @@ const FEISHU_ENTRIES: SeedEntry[] = [
 ];
 
 export async function seedFeishuEntries(db: D1Database) {
+  const status = await db
+    .prepare(`
+      SELECT
+        COUNT(*) AS imported_count,
+        SUM(CASE WHEN kind = 'large_expense' AND owner = 'family' THEN 1 ELSE 0 END) AS legacy_large_count
+      FROM ledger_entries
+      WHERE source = 'feishu'
+    `)
+    .first<{ imported_count: number; legacy_large_count: number }>();
+
+  if (
+    Number(status?.imported_count) >= FEISHU_ENTRIES.length &&
+    Number(status?.legacy_large_count) === 0
+  ) {
+    return;
+  }
+
   const insert = `
     INSERT INTO ledger_entries (
       source_key, kind, owner, entry_date, month, title, category,

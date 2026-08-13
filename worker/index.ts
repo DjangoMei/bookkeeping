@@ -48,7 +48,13 @@ const worker = {
       }, allowedWidths);
     }
 
-    return handler.fetch(request, env, ctx);
+    const response = await handler.fetch(request, env, ctx);
+    if (response.ok && url.pathname.includes("/mascot-cutouts/") && url.pathname.endsWith(".webp")) {
+      const headers = new Headers(response.headers);
+      headers.set("Cache-Control", "public, max-age=604800, stale-while-revalidate=86400");
+      return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+    }
+    return response;
   },
 };
 

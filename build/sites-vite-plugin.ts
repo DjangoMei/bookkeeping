@@ -61,16 +61,18 @@ export function sites(): Plugin {
 
         const headersPath = resolve(clientDirectory, "_headers");
         const immutableAssetsRule = `${BASE_PATH}/assets/*\n  Cache-Control: public, max-age=31536000, immutable`;
-        const headers = (await exists(headersPath))
+        const mascotAssetsRule = `${BASE_PATH}/mascot-cutouts/*.webp\n  Cache-Control: public, max-age=604800, stale-while-revalidate=86400`;
+        let headers = (await exists(headersPath))
           ? await readFile(headersPath, "utf8")
           : "";
 
         if (!headers.includes(`${BASE_PATH}/assets/*`)) {
-          await writeFile(
-            headersPath,
-            `${headers.trimEnd()}\n${immutableAssetsRule}\n`,
-          );
+          headers += `${headers.trimEnd() ? "\n" : ""}${immutableAssetsRule}\n`;
         }
+        if (!headers.includes(`${BASE_PATH}/mascot-cutouts/*.webp`)) {
+          headers += `${mascotAssetsRule}\n`;
+        }
+        await writeFile(headersPath, headers);
       }
 
       await rm(outputDirectory, { recursive: true, force: true });

@@ -80,6 +80,26 @@ test("keeps large expenses private to their assigned user", async () => {
   );
 });
 
+test("keeps saving and mascot loading lightweight", async () => {
+  const [client, database, worker] = await Promise.all([
+    readFile(new URL("app/ledger-app.tsx", projectRoot), "utf8"),
+    readFile(new URL("db/index.ts", projectRoot), "utf8"),
+    readFile(new URL("worker/index.ts", projectRoot), "utf8"),
+  ]);
+
+  assert.match(client, /setEntries\(\(current\) =>/);
+  assert.doesNotMatch(client, /closeModal\(\);\s*await load\(\);/);
+  assert.match(client, /mascot-cutouts\/00-character-base\.webp/);
+  assert.doesNotMatch(client, /mascot-cutouts\/00-character-base\.png/);
+  assert.match(database, /ledgerSchemaPromise \?\?=/);
+  assert.match(database, /familyFinanceSchemaPromise \?\?=/);
+  assert.match(database, /seedFeishuEntries/);
+  const seed = await readFile(new URL("db/feishu-seed.ts", projectRoot), "utf8");
+  assert.match(seed, /imported_count/);
+  assert.match(seed, /legacy_large_count/);
+  assert.match(worker, /stale-while-revalidate=86400/);
+});
+
 test("redirects the bare base path to its canonical trailing-slash URL", async () => {
   const [viteConfig, worker] = await Promise.all([
     readFile(new URL("vite.config.ts", projectRoot), "utf8"),
@@ -124,21 +144,23 @@ test("packages immutable client assets under the public base path", async () => 
   assert.match(plugin, /const basePathSegment = BASE_PATH/);
   assert.match(plugin, /await cp\(/);
   assert.match(headers, /\/bookkeeping\/assets\/\*/);
+  assert.match(headers, /\/bookkeeping\/mascot-cutouts\/\*\.webp/);
+  assert.match(headers, /stale-while-revalidate=86400/);
 });
 
 test("uses transparent Cola artwork across every ledger page", async () => {
   const client = await readFile(new URL("app/ledger-app.tsx", projectRoot), "utf8");
   const cutouts = [
-    "00-character-base.png",
-    "01-playing-blocks.png",
-    "02-reading-picture-book.png",
-    "03-drawing-playful-v2.png",
-    "04-watching-tv-excited-v2.png",
-    "05-playing-ball.png",
-    "06-bunny-tight-hug-v2.png",
-    "07-eating-cake.png",
-    "08-crying.png",
-    "09-angry.png",
+    "00-character-base.webp",
+    "01-playing-blocks.webp",
+    "02-reading-picture-book.webp",
+    "03-drawing-playful-v2.webp",
+    "04-watching-tv-excited-v2.webp",
+    "05-playing-ball.webp",
+    "06-bunny-tight-hug-v2.webp",
+    "07-eating-cake.webp",
+    "08-crying.webp",
+    "09-angry.webp",
   ];
 
   await Promise.all(cutouts.map((name) => access(new URL(`public/mascot-cutouts/${name}`, projectRoot))));

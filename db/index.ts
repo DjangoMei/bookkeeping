@@ -3,6 +3,9 @@ import { drizzle } from "drizzle-orm/d1";
 import { seedFeishuEntries } from "./feishu-seed";
 import * as schema from "./schema";
 
+let ledgerSchemaPromise: Promise<void> | null = null;
+let familyFinanceSchemaPromise: Promise<void> | null = null;
+
 export function getDb() {
   if (!env.DB) {
     throw new Error(
@@ -13,7 +16,7 @@ export function getDb() {
   return drizzle(env.DB, { schema });
 }
 
-export async function ensureLedgerSchema() {
+async function initializeLedgerSchema() {
   if (!env.DB) {
     throw new Error("Cloudflare D1 binding `DB` is unavailable.");
   }
@@ -48,7 +51,15 @@ export async function ensureLedgerSchema() {
   await seedFeishuEntries(env.DB);
 }
 
-export async function ensureFamilyFinanceSchema() {
+export function ensureLedgerSchema() {
+  ledgerSchemaPromise ??= initializeLedgerSchema().catch((error) => {
+    ledgerSchemaPromise = null;
+    throw error;
+  });
+  return ledgerSchemaPromise;
+}
+
+async function initializeFamilyFinanceSchema() {
   if (!env.DB) throw new Error("Cloudflare D1 binding `DB` is unavailable.");
 
   await env.DB.prepare(`
@@ -96,4 +107,12 @@ export async function ensureFamilyFinanceSchema() {
     SELECT '新房装修', 0, '进行中', '我们家的第一个大额专项', 'system'
     WHERE NOT EXISTS (SELECT 1 FROM family_projects)
   `).run();
+}
+
+export function ensureFamilyFinanceSchema() {
+  familyFinanceSchemaPromise ??= initializeFamilyFinanceSchema().catch((error) => {
+    familyFinanceSchemaPromise = null;
+    throw error;
+  });
+  return familyFinanceSchemaPromise;
 }
