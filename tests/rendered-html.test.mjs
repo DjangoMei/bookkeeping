@@ -176,6 +176,22 @@ test("maps browser back and forward navigation to ledger page levels", async () 
   assert.match(client, /if \(current\?\.modal\) window\.history\.back\(\)/);
 });
 
+test("hydrates the authenticated role before client-side history restores the ledger", async () => {
+  const [page, client, auth] = await Promise.all([
+    readFile(new URL("app/page.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/ledger-app.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/auth-session.ts", projectRoot), "utf8"),
+  ]);
+
+  assert.match(page, /export const dynamic = "force-dynamic"/);
+  assert.match(page, /getSessionRoleFromCookieHeader/);
+  assert.match(page, /<LedgerApp initialRole=\{initialRole\} \/>/);
+  assert.match(client, /function LedgerApp\(\{ initialRole \}/);
+  assert.match(client, /useState<Role>\(initialRole \?\? "zcy"\)/);
+  assert.match(client, /useState\(initialRole !== null\)/);
+  assert.match(auth, /getSessionRoleFromCookieHeader/);
+});
+
 test("allows editing records and tracks mother-paid child expenses", async () => {
   const [client, route, schema, db, seed, migration] = await Promise.all([
     readFile(new URL("app/ledger-app.tsx", projectRoot), "utf8"),

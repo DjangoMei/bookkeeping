@@ -31,9 +31,8 @@ async function signature(payload: string) {
   return base64Url(new Uint8Array(signed));
 }
 
-function cookieValue(request: Request) {
-  const raw = request.headers.get("cookie") ?? "";
-  const pair = raw
+function cookieValue(cookieHeader: string | null) {
+  const pair = (cookieHeader ?? "")
     .split(";")
     .map((item) => item.trim())
     .find((item) => item.startsWith(`${COOKIE_NAME}=`));
@@ -52,8 +51,10 @@ export function clearSessionCookie() {
   return `${COOKIE_NAME}=; Path=${BASE_PATH}; Max-Age=0; HttpOnly; SameSite=Lax`;
 }
 
-export async function getSessionRole(request: Request): Promise<LedgerRole | null> {
-  const value = cookieValue(request);
+export async function getSessionRoleFromCookieHeader(
+  cookieHeader: string | null,
+): Promise<LedgerRole | null> {
+  const value = cookieValue(cookieHeader);
   if (!value) return null;
 
   const [role, expiresText, suppliedSignature] = value.split(".");
@@ -74,6 +75,10 @@ export async function getSessionRole(request: Request): Promise<LedgerRole | nul
     mismatch |= expectedSignature.charCodeAt(index) ^ suppliedSignature.charCodeAt(index);
   }
   return mismatch === 0 ? role : null;
+}
+
+export function getSessionRole(request: Request) {
+  return getSessionRoleFromCookieHeader(request.headers.get("cookie"));
 }
 
 export function passphraseMatches(candidate: string) {
