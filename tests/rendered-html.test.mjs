@@ -207,8 +207,8 @@ test("hydrates the authenticated role before client-side history restores the le
 
   assert.match(page, /export const dynamic = "force-dynamic"/);
   assert.match(page, /getSessionRoleFromCookieHeader/);
-  assert.match(page, /<LedgerApp initialRole=\{initialRole\} \/>/);
-  assert.match(client, /function LedgerApp\(\{ initialRole \}/);
+  assert.match(page, /<LedgerApp initialFinance=\{initialFinance\} initialRole=\{initialRole\} \/>/);
+  assert.match(client, /function LedgerApp\(\{ initialFinance, initialRole \}/);
   assert.match(client, /useState<Role>\(initialRole \?\? "zcy"\)/);
   assert.match(client, /useState\(initialRole !== null\)/);
   assert.match(auth, /getSessionRoleFromCookieHeader/);
@@ -263,15 +263,22 @@ test("adds shared savings and large project workspaces", async () => {
 });
 
 test("keeps MJG on the same live family-finance data", async () => {
-  const [client, route] = await Promise.all([
+  const [client, route, page, serverData] = await Promise.all([
     readFile(new URL("app/ledger-app.tsx", projectRoot), "utf8"),
     readFile(new URL("app/api/family-finance/route.ts", projectRoot), "utf8"),
+    readFile(new URL("app/page.tsx", projectRoot), "utf8"),
+    readFile(new URL("db/family-finance.ts", projectRoot), "utf8"),
   ]);
   assert.match(client, /django: \{ name: "MJG"/);
   assert.match(client, /family-finance"\), \{ cache: "no-store" \}/);
   assert.match(client, /window\.setInterval\(refresh, 15_000\)/);
   assert.match(client, /window\.addEventListener\("focus", refresh\)/);
   assert.match(client, /document\.addEventListener\("visibilitychange", onVisibilityChange\)/);
-  assert.match(route, /"Cache-Control": "private, no-store, max-age=0"/);
+  assert.match(route, /"Cache-Control": "private, no-store, max-age=0, must-revalidate"/);
   assert.match(route, /"Vary": "Cookie"/);
+  assert.match(route, /"X-Family-Data-Source": "cloudflare-d1"/);
+  assert.match(page, /initialFinance = initialRole \? await readFamilyFinance\(\) : null/);
+  assert.match(page, /<LedgerApp initialFinance=\{initialFinance\}/);
+  assert.match(serverData, /db\.select\(\)\.from\(savingsAccounts\)/);
+  assert.match(serverData, /serverSyncedAt/);
 });

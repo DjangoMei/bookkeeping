@@ -1,5 +1,6 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { ensureFamilyFinanceSchema, getDb } from "../../../db";
+import { readFamilyFinance } from "../../../db/family-finance";
 import { familyProjects, projectExpenses, savingsAccounts } from "../../../db/schema";
 import { getSessionRole } from "../../auth-session";
 
@@ -18,16 +19,10 @@ export async function GET(request: Request) {
   const role = await getSessionRole(request);
   if (!role) return Response.json({ error: "请先登录" }, { status: 403 });
   try {
-    await ensureFamilyFinanceSchema();
-    const db = getDb();
-    const [savings, projects, expenses] = await Promise.all([
-      db.select().from(savingsAccounts).orderBy(desc(savingsAccounts.updatedAt), desc(savingsAccounts.id)),
-      db.select().from(familyProjects).orderBy(desc(familyProjects.updatedAt), desc(familyProjects.id)),
-      db.select().from(projectExpenses).orderBy(desc(projectExpenses.expenseDate), desc(projectExpenses.id)),
-    ]);
+    const data = await readFamilyFinance();
     return Response.json(
-      { savings, projects, expenses },
-      { headers: { "Cache-Control": "private, no-store, max-age=0", "Vary": "Cookie" } },
+      data,
+      { headers: { "Cache-Control": "private, no-store, max-age=0, must-revalidate", "Vary": "Cookie", "X-Family-Data-Source": "cloudflare-d1" } },
     );
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "读取家庭资产失败" }, { status: 500 });

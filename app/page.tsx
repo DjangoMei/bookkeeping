@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { getSessionRoleFromCookieHeader } from "./auth-session";
+import { readFamilyFinance } from "../db/family-finance";
 import LedgerApp from "./ledger-app";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,7 @@ export default async function Home() {
   const initialRole = await getSessionRoleFromCookieHeader(
     requestHeaders.get("cookie"),
   );
+  const initialFinance = initialRole ? await readFamilyFinance() : null;
 
-  return <LedgerApp initialRole={initialRole} />;
+  return <LedgerApp initialFinance={initialFinance} initialRole={initialRole} />;
 }

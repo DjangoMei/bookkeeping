@@ -159,11 +159,11 @@ function EntryOwner({
   return entry.owner === "family" ? "我们家" : roleNames[entry.owner].name;
 }
 
-export default function LedgerApp({ initialRole }: { initialRole: Role | null }) {
+export default function LedgerApp({ initialFinance, initialRole }: { initialFinance: FamilyFinanceData | null; initialRole: Role | null }) {
   const [active, setActive] = useState<Kind>("overview");
   const [role, setRole] = useState<Role>(initialRole ?? "zcy");
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [familyFinance, setFamilyFinance] = useState<FamilyFinanceData>({ savings: [], projects: [], expenses: [] });
+  const [familyFinance, setFamilyFinance] = useState<FamilyFinanceData>(initialFinance ?? { savings: [], projects: [], expenses: [] });
   const [loading, setLoading] = useState(true);
   const [sessionChecking, setSessionChecking] = useState(initialRole === null);
   const [authenticated, setAuthenticated] = useState(initialRole !== null);

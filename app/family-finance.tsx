@@ -6,7 +6,7 @@ import { withBasePath } from "./base-path";
 export type SavingAccount = { id: number; name: string; category: string; balanceCents: number; detail: string; updatedByRole: string };
 export type FamilyProject = { id: number; name: string; budgetCents: number; status: string; detail: string; updatedByRole: string };
 export type ProjectExpense = { id: number; projectId: number; expenseDate: string; title: string; category: string; amountCents: number; detail: string; updatedByRole: string };
-export type FamilyFinanceData = { savings: SavingAccount[]; projects: FamilyProject[]; expenses: ProjectExpense[] };
+export type FamilyFinanceData = { savings: SavingAccount[]; projects: FamilyProject[]; expenses: ProjectExpense[]; serverSyncedAt?: string };
 
 type View = "savings" | "projects";
 type Editor = { entity: "saving" | "project" | "expense"; id: number | null } | null;
@@ -56,7 +56,7 @@ export default function FamilyFinance({ data, onChange, view }: { data: FamilyFi
 
   if (view === "savings") return (
     <section className="finance-workspace">
-      <div className="finance-summary blue"><span>FAMILY SAVINGS</span><strong>{money(data.savings.reduce((sum, item) => sum + item.balanceCents, 0))}</strong><small>{data.savings.length} 个流动资金账户 · 两个人都能维护</small><button onClick={() => setEditor({ entity: "saving", id: null })} type="button">＋ 添加账户</button></div>
+      <div className="finance-summary blue"><span>FAMILY SAVINGS</span><strong>{money(data.savings.reduce((sum, item) => sum + item.balanceCents, 0))}</strong><small>{data.savings.length} 个流动资金账户 · 云端家庭共享</small><button onClick={() => setEditor({ entity: "saving", id: null })} type="button">＋ 添加账户</button></div>
       <div className="finance-board">
         <div className="finance-board-head"><div><span className="section-kicker">AVAILABLE FUNDS</span><h2>我们的可支配存款</h2></div></div>
         {message && <p className="finance-message">{message}</p>}
