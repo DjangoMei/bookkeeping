@@ -6,7 +6,13 @@ import { withBasePath } from "./base-path";
 export type SavingAccount = { id: number; name: string; category: string; balanceCents: number; detail: string; updatedByRole: string };
 export type FamilyProject = { id: number; name: string; budgetCents: number; status: string; detail: string; updatedByRole: string };
 export type ProjectExpense = { id: number; projectId: number; expenseDate: string; title: string; category: string; amountCents: number; detail: string; updatedByRole: string };
-export type FamilyFinanceData = { savings: SavingAccount[]; projects: FamilyProject[]; expenses: ProjectExpense[]; serverSyncedAt?: string };
+export type FamilyFinanceData = {
+  savings: SavingAccount[];
+  projects: FamilyProject[];
+  expenses: ProjectExpense[];
+  totals?: { savingsCents: number; projectSpentCents: number };
+  serverSyncedAt?: string;
+};
 
 type View = "savings" | "projects";
 type Editor = { entity: "saving" | "project" | "expense"; id: number | null } | null;

@@ -112,7 +112,7 @@ test("redirects the bare base path to its canonical trailing-slash URL", async (
     viteConfig,
     /response\.setHeader\("Location", `\$\{BASE_PATH\}\/\$\{requestUrl\.search\}`\)/,
   );
-  assert.match(worker, /if \(url\.pathname === BASE_PATH\)/);
+  assert.match(worker, /if \(url\.pathname === "\/" \|\| url\.pathname === BASE_PATH\)/);
   assert.match(worker, /Response\.redirect\(url\.toString\(\), 308\)/);
 });
 
@@ -282,5 +282,9 @@ test("keeps MJG on the same live family-finance data", async () => {
   assert.match(page, /initialFinance = initialRole \? await readFamilyFinance\(\) : null/);
   assert.match(page, /<LedgerApp initialFinance=\{initialFinance\}/);
   assert.match(serverData, /db\.select\(\)\.from\(savingsAccounts\)/);
+  assert.match(serverData, /savingsCents: savings\.reduce/);
+  assert.match(serverData, /projectSpentCents: expenses\.reduce/);
+  assert.match(client, /familyFinance\.totals\?\.savingsCents/);
+  assert.match(client, /familyFinance\.totals\?\.projectSpentCents/);
   assert.match(serverData, /serverSyncedAt/);
 });

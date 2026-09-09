@@ -10,5 +10,14 @@ export async function readFamilyFinance() {
     db.select().from(familyProjects).orderBy(desc(familyProjects.updatedAt), desc(familyProjects.id)),
     db.select().from(projectExpenses).orderBy(desc(projectExpenses.expenseDate), desc(projectExpenses.id)),
   ]);
-  return { savings, projects, expenses, serverSyncedAt: new Date().toISOString() };
+  return {
+    savings,
+    projects,
+    expenses,
+    totals: {
+      savingsCents: savings.reduce((sum, item) => sum + item.balanceCents, 0),
+      projectSpentCents: expenses.reduce((sum, item) => sum + item.amountCents, 0),
+    },
+    serverSyncedAt: new Date().toISOString(),
+  };
 }

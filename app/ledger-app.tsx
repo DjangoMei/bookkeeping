@@ -301,8 +301,10 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
   const childMotherThisYear = entries.filter((entry) => entry.kind === "child_expense" && entry.payer === "mother" && entry.entryDate.startsWith(year)).reduce((sum, entry) => sum + entry.amountCents, 0);
   const abnormalCount = entries.filter((entry) => entry.kind === "abnormal_month" && entry.entryDate.startsWith(year)).length;
   const giftsThisYear = entries.filter((entry) => entry.kind === "gift" && entry.entryDate.startsWith(year)).reduce((sum, entry) => sum + entry.amountCents, 0);
-  const savingsTotal = familyFinance.savings.reduce((sum, item) => sum + item.balanceCents, 0);
-  const projectsSpent = familyFinance.expenses.reduce((sum, item) => sum + item.amountCents, 0);
+  const savingsTotal = familyFinance.totals?.savingsCents
+    ?? familyFinance.savings.reduce((sum, item) => sum + item.balanceCents, 0);
+  const projectsSpent = familyFinance.totals?.projectSpentCents
+    ?? familyFinance.expenses.reduce((sum, item) => sum + item.amountCents, 0);
 
   const visibleEntries = useMemo(() => {
     const entriesVisibleToRole = entries.filter(
