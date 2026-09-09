@@ -202,7 +202,12 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
   }
 
   async function loadFamilyFinance() {
-    const response = await fetch(withBasePath("/api/family-finance"), { cache: "no-store" });
+    const url = `${withBasePath("/api/family-finance")}?fresh=${Date.now()}`;
+    const response = await fetch(url, {
+      cache: "no-store",
+      credentials: "include",
+      headers: { "Cache-Control": "no-cache" },
+    });
     const data = await response.json() as FamilyFinanceData & { error?: string };
     if (!response.ok) {
       setNotice(data.error || "家庭共享数据同步失败");
@@ -270,7 +275,7 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
     };
     window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", onVisibilityChange);
-    const timer = window.setInterval(refresh, 15_000);
+    const timer = window.setInterval(refresh, 5_000);
     return () => {
       window.clearInterval(timer);
       window.removeEventListener("focus", refresh);

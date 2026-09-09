@@ -270,8 +270,10 @@ test("keeps MJG on the same live family-finance data", async () => {
     readFile(new URL("db/family-finance.ts", projectRoot), "utf8"),
   ]);
   assert.match(client, /django: \{ name: "MJG"/);
-  assert.match(client, /family-finance"\), \{ cache: "no-store" \}/);
-  assert.match(client, /window\.setInterval\(refresh, 15_000\)/);
+  assert.match(client, /family-finance"\)\}\?fresh=\$\{Date\.now\(\)\}/);
+  assert.match(client, /cache: "no-store"/);
+  assert.match(client, /credentials: "include"/);
+  assert.match(client, /window\.setInterval\(refresh, 5_000\)/);
   assert.match(client, /window\.addEventListener\("focus", refresh\)/);
   assert.match(client, /document\.addEventListener\("visibilitychange", onVisibilityChange\)/);
   assert.match(route, /"Cache-Control": "private, no-store, max-age=0, must-revalidate"/);
