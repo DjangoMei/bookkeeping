@@ -25,7 +25,10 @@ export async function GET(request: Request) {
       db.select().from(familyProjects).orderBy(desc(familyProjects.updatedAt), desc(familyProjects.id)),
       db.select().from(projectExpenses).orderBy(desc(projectExpenses.expenseDate), desc(projectExpenses.id)),
     ]);
-    return Response.json({ savings, projects, expenses });
+    return Response.json(
+      { savings, projects, expenses },
+      { headers: { "Cache-Control": "private, no-store, max-age=0", "Vary": "Cookie" } },
+    );
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "读取家庭资产失败" }, { status: 500 });
   }

@@ -261,3 +261,17 @@ test("adds shared savings and large project workspaces", async () => {
   assert.match(migration, /CREATE TABLE `savings_accounts`/);
   assert.match(migration, /idx_project_expenses_project_date/);
 });
+
+test("keeps MJG on the same live family-finance data", async () => {
+  const [client, route] = await Promise.all([
+    readFile(new URL("app/ledger-app.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/api/family-finance/route.ts", projectRoot), "utf8"),
+  ]);
+  assert.match(client, /django: \{ name: "MJG"/);
+  assert.match(client, /family-finance"\), \{ cache: "no-store" \}/);
+  assert.match(client, /window\.setInterval\(refresh, 15_000\)/);
+  assert.match(client, /window\.addEventListener\("focus", refresh\)/);
+  assert.match(client, /document\.addEventListener\("visibilitychange", onVisibilityChange\)/);
+  assert.match(route, /"Cache-Control": "private, no-store, max-age=0"/);
+  assert.match(route, /"Vary": "Cookie"/);
+});

@@ -72,7 +72,7 @@ const categoryOptions: Record<LedgerKind, string[]> = {
 
 const roleNames: Record<Role, { name: string; english: string; initial: string }> = {
   zcy: { name: "ZCY", english: "MY LEDGER", initial: "Z" },
-  django: { name: "Django", english: "MY LEDGER", initial: "D" },
+  django: { name: "MJG", english: "MY LEDGER", initial: "M" },
 };
 
 const mascotByPage: Record<Exclude<Kind, "overview">, { src: string; alt: string; note: string; second?: string }> = {
@@ -202,9 +202,14 @@ export default function LedgerApp({ initialRole }: { initialRole: Role | null })
   }
 
   async function loadFamilyFinance() {
-    const response = await fetch(withBasePath("/api/family-finance"));
-    if (!response.ok) return;
-    setFamilyFinance(await response.json() as FamilyFinanceData);
+    const response = await fetch(withBasePath("/api/family-finance"), { cache: "no-store" });
+    const data = await response.json() as FamilyFinanceData & { error?: string };
+    if (!response.ok) {
+      setNotice(data.error || "家庭共享数据同步失败");
+      return false;
+    }
+    setFamilyFinance(data);
+    return true;
   }
 
   useEffect(() => {
@@ -257,6 +262,22 @@ export default function LedgerApp({ initialRole }: { initialRole: Role | null })
     };
   }, [authenticated]);
 
+  useEffect(() => {
+    if (!authenticated) return;
+    const refresh = () => void loadFamilyFinance();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    const timer = window.setInterval(refresh, 15_000);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [authenticated]);
+
   const cycle = currentCycle();
   const largeEntries = entries.filter(
     (entry) =>
@@ -303,6 +324,7 @@ export default function LedgerApp({ initialRole }: { initialRole: Role | null })
     setModalOpen(false);
     setEditingId(null);
     setNotice("");
+    if (next === "savings" || next === "projects") void loadFamilyFinance();
   }
 
   function openAdd(kind?: LedgerKind) {
