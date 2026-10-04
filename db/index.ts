@@ -6,6 +6,11 @@ import * as schema from "./schema";
 let ledgerSchemaPromise: Promise<void> | null = null;
 let familyFinanceSchemaPromise: Promise<void> | null = null;
 
+export function getRawDb() {
+  if (!env.DB) throw new Error("Database binding is unavailable");
+  return env.DB;
+}
+
 export function getDb() {
   if (!env.DB) {
     throw new Error(

@@ -544,6 +544,7 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
         <div className="account">
           <div className="avatar">{currentRole.initial}</div>
           <div><strong>{currentRole.name}</strong><span>{currentRole.english} IS HERE!</span></div>
+          <a className="logout-button" href={withBasePath("/data-transfer")}>备份／合并</a>
           <button className="logout-button" onClick={logout} title="退出登录" type="button">退出</button>
         </div>
       </aside>
