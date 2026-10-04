@@ -382,6 +382,10 @@ h1, h2, .brand strong, .login-brand strong, .metric-card > strong, .page-banner 
 .metric-card small { display: block; position: relative; z-index: 1; margin-top: 9px; color: inherit; opacity: .65; font-size: 9px; }
 .metric-stamp { position: absolute; right: -8px; bottom: -22px; color: rgba(129,38,49,.12); font: 900 74px var(--comic); transform: rotate(-8deg); }
 .metric-card.red .metric-stamp { color: rgba(255,249,233,.13); }
+.child-total-link { position: relative; z-index: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 3px 6px; margin-top: 7px; padding: 4px 7px; max-width: 100%; color: var(--red-dark); background: rgba(255,252,244,.72); border: 1px solid rgba(129,38,49,.25); border-radius: 8px; cursor: pointer; font-size: 10px; text-align: left; }
+.child-total-link strong { font-size: 11px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.child-total-link:hover { background: var(--paper); }
+.child-total-link:focus-visible { outline: 2px solid var(--red-dark); outline-offset: 3px; }
 
 .top-actions { display: flex; align-items: center; gap: 9px; }
 .family-shortcuts { display: flex; gap: 7px; }
@@ -472,6 +476,11 @@ h1, h2, .brand strong, .login-brand strong, .metric-card > strong, .page-banner 
 .ownership-summary strong { color: var(--red-dark); font-size: 10px; }
 .ownership-summary span { font-size: 9px; }
 .child-summary { background: #f8e7e3; }
+.child-totals { flex: 0 0 auto; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; padding: 12px 18px; background: var(--cream-deep); border-top: 1px dashed rgba(129,38,49,.28); }
+.child-totals > div { min-width: 0; }
+.child-totals span { display: block; color: var(--muted); font-size: 10px; }
+.child-totals strong { display: block; margin: 5px 0; color: var(--red-dark); font-size: clamp(17px,1.6vw,24px); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.child-totals small { display: block; color: var(--muted); font-size: 9px; line-height: 1.4; }
 .outline-button, .cancel-button { padding: 9px 14px; cursor: pointer; color: var(--red-dark); background: var(--cream); border: 1.5px solid var(--red-dark); border-radius: 12px 9px 13px 10px; font-size: 10px; font-weight: 900; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 10px; }
@@ -721,6 +730,8 @@ td strong, td small { overflow-wrap: anywhere; }
   .form-foot { align-items: stretch; flex-direction: column; }
   .form-foot > div { justify-content: flex-end; }
   .ownership-summary { align-items: flex-start; flex-direction: column; padding: 10px 16px; }
+  .child-totals { grid-template-columns: repeat(2,minmax(0,1fr)); padding: 12px 16px; }
+  .child-totals > div:first-child { grid-column: 1 / -1; }
   .empty { flex-direction: column; text-align: center; }
   .account-grid { grid-template-columns: 1fr; }
   .project-numbers { grid-template-columns: 1fr; }

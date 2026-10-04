@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { withBasePath } from "./base-path";
 import { greetingForHour } from "./time-greeting";
+import { summarizeChildExpenses } from "./child-expense-totals";
 import FamilyFinance, { type FamilyFinanceData } from "./family-finance";
 
 type Role = "zcy" | "django";
@@ -297,8 +298,9 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
   const largeUsed = largeEntries.reduce((sum, entry) => sum + entry.amountCents, 0);
   const year = String(new Date().getFullYear());
   const incomeThisYear = entries.filter((entry) => entry.kind === "income" && entry.entryDate.startsWith(year)).reduce((sum, entry) => sum + entry.amountCents, 0);
-  const childThisYear = entries.filter((entry) => entry.kind === "child_expense" && entry.entryDate.startsWith(year)).reduce((sum, entry) => sum + entry.amountCents, 0);
-  const childMotherThisYear = entries.filter((entry) => entry.kind === "child_expense" && entry.payer === "mother" && entry.entryDate.startsWith(year)).reduce((sum, entry) => sum + entry.amountCents, 0);
+  const childTotals = useMemo(() => summarizeChildExpenses(entries, year), [entries, year]);
+  const childThisYear = childTotals.yearCents;
+  const childMotherThisYear = childTotals.yearMotherCents;
   const abnormalCount = entries.filter((entry) => entry.kind === "abnormal_month" && entry.entryDate.startsWith(year)).length;
   const giftsThisYear = entries.filter((entry) => entry.kind === "gift" && entry.entryDate.startsWith(year)).reduce((sum, entry) => sum + entry.amountCents, 0);
   const savingsTotal = familyFinance.totals?.savingsCents
@@ -582,7 +584,15 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
             <div className="metric-grid">
               <article className="metric-card red"><span>MY INCOME</span><strong>{money(incomeThisYear)}</strong><small>{currentRole.name}今年的收入</small><b className="metric-stamp">01</b></article>
               <article className="metric-card cream"><span>BIG BUY</span><strong>{money(largeUsed)}</strong><small>还可以花 {money(Math.max(5_000_000 - largeUsed, 0))}</small><b className="metric-stamp">02</b></article>
-              <article className="metric-card blue"><span>FOR BABY</span><strong>{money(childThisYear)}</strong><small>其中妈妈支付 {money(childMotherThisYear)}</small><b className="metric-stamp">03</b></article>
+              <article className="metric-card blue child-metric">
+                <span>小宝今年花费</span>
+                <strong>{loading ? "—" : money(childThisYear)}</strong>
+                <small>其中妈妈支付 {loading ? "—" : money(childMotherThisYear)}</small>
+                <button className="child-total-link" onClick={() => navigateTo("child_expense")} type="button" aria-label="查看小宝全部花费合计与明细">
+                  <span>累计花费</span><strong>{loading ? "—" : money(childTotals.totalCents)}</strong><span aria-hidden="true">↗</span>
+                </button>
+                <b className="metric-stamp">03</b>
+              </article>
               <article className="metric-card cream"><span>SPECIAL &amp; GIFTS</span><strong>{abnormalCount}<em> 个月</em></strong><small>今年收到 {money(giftsThisYear)}</small><b className="metric-stamp">04</b></article>
             </div>
 
@@ -634,10 +644,16 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
             </div>
           )}
           {active === "child_expense" && (
-            <div className="ownership-summary child-summary">
-              <strong>今年妈妈为小宝支付 {money(childMotherThisYear)}</strong>
-              <span>旧账中备注“妈妈”的记录已自动归入，修改账目时也可以调整付款人。</span>
-            </div>
+            <>
+              <div className="child-totals" aria-label="小宝花费加总" aria-live="polite">
+                <div><span>累计花费 · {loading ? "—" : childTotals.count} 笔</span><strong>{loading ? "—" : money(childTotals.totalCents)}</strong><small>全部年份的旧账与新账</small></div>
+                <div><span>{year} 年花费</span><strong>{loading ? "—" : money(childThisYear)}</strong><small>其中妈妈支付 {loading ? "—" : money(childMotherThisYear)}</small></div>
+                <div><span>妈妈累计支付</span><strong>{loading ? "—" : money(childTotals.motherCents)}</strong><small>已包含在累计花费中</small></div>
+              </div>
+              <div className="ownership-summary child-summary">
+                <span>备注“妈妈”的旧账已归入妈妈支付；新增、修改或删除账目后，合计自动更新。</span>
+              </div>
+            </>
           )}
           {loading ? (
             <div className="empty">正在翻找小纸条…</div>
