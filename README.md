@@ -22,9 +22,10 @@ zcy 与 Django 共用的家庭记账网页。
 复制 `.env.example` 为 `.dev.vars`，并配置：
 
 ```text
-LEDGER_PASSPHRASE=你的安全口令
 SESSION_SECRET=一段足够长的随机字符串
 ```
+
+共享登录口令的加盐 PBKDF2 校验值保存在 `config/ledger-passphrase.json`，登录和备份管理共用同一口令。更新该文件并部署即可重设口令；旧环境变量 `LEDGER_PASSPHRASE` 不再参与校验。仓库不保存口令明文。
 
 安装依赖并启动与正式环境一致的稳定服务：
 

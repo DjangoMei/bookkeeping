@@ -27,7 +27,7 @@ export async function POST(request: Request) {
 
     if (
       (role !== "zcy" && role !== "django") ||
-      !passphraseMatches(payload.passphrase ?? "")
+      !await passphraseMatches(payload.passphrase ?? "")
     ) {
       return Response.json({ error: "用户或口令不正确" }, { status: 401 });
     }

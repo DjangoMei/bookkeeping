@@ -1,5 +1,7 @@
 import { env } from "cloudflare:workers";
 import { BASE_PATH } from "./base-path";
+import passphraseVerifier from "../config/ledger-passphrase.json";
+import { verifyPassphrase } from "./passphrase-verifier";
 
 export type LedgerRole = "zcy" | "django";
 
@@ -81,13 +83,6 @@ export function getSessionRole(request: Request) {
   return getSessionRoleFromCookieHeader(request.headers.get("cookie"));
 }
 
-export function passphraseMatches(candidate: string) {
-  const expected = env.LEDGER_PASSPHRASE;
-  if (!expected || candidate.length !== expected.length) return false;
-
-  let mismatch = 0;
-  for (let index = 0; index < expected.length; index += 1) {
-    mismatch |= expected.charCodeAt(index) ^ candidate.charCodeAt(index);
-  }
-  return mismatch === 0;
+export async function passphraseMatches(candidate: string) {
+  return verifyPassphrase(candidate, passphraseVerifier);
 }

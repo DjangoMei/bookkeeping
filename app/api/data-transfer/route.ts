@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     if (!isSameOrigin(request)) return reply({ error: "仅允许从当前网站执行管理操作。" }, 403);
     if (!await getSessionRole(request)) return reply({ error: "请先登录账本。" }, 401);
     if (body.action === "unlock") {
-      if (typeof body.passphrase !== "string" || body.passphrase.length > 512 || !passphraseMatches(body.passphrase)) return reply({ error: "口令不正确。" }, 403);
+      if (typeof body.passphrase !== "string" || body.passphrase.length > 512 || !await passphraseMatches(body.passphrase)) return reply({ error: "口令不正确。" }, 403);
       return reply({ unlocked: true }, 200, { "Set-Cookie": await transferCookie(request) });
     }
     if (!await hasTransferAccess(request)) return reply({ error: "管理授权已过期，请再次输入口令。" }, 403);

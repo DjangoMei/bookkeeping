@@ -22,7 +22,9 @@
 错误日志  ~/Library/Logs/bookkeeping-deploy.err.log
 ```
 
-`.dev.vars` 和 `.wrangler` 只保存在生产副本中，并由 Git 忽略。远端更新不会覆盖口令、会话密钥或本地 D1 数据。
+`.dev.vars` 和 `.wrangler` 只保存在生产副本中，并由 Git 忽略。远端更新不会覆盖会话密钥或本地 D1 数据。
+
+共享口令采用仓库内 `config/ledger-passphrase.json` 的加盐 PBKDF2 校验值，登录和备份管理共用这一配置。GitHub 自动部署会同步口令校验值，不再读取服务器遗留的 `LEDGER_PASSPHRASE`，也不会启用额外的备用口令。
 
 ## 手动检查
 
