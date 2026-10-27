@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { env } from "cloudflare:workers";
 import { getSessionRoleFromCookieHeader } from "./auth-session";
 import { readFamilyFinance } from "../db/family-finance";
 import LedgerApp from "./ledger-app";
@@ -18,5 +19,5 @@ export default async function Home() {
   );
   const initialFinance = initialRole ? await readFamilyFinance() : null;
 
-  return <LedgerApp initialFinance={initialFinance} initialRole={initialRole} />;
+  return <LedgerApp initialFinance={initialFinance} initialRole={initialRole} localPreview={env.LOCAL_PREVIEW === "1"} />;
 }

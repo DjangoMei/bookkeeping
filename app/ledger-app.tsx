@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { withBasePath } from "./base-path";
 import { greetingForHour } from "./time-greeting";
 import { summarizeChildExpenses } from "./child-expense-totals";
+import { PARTNER_GIFT_BUDGET_CENTS, partnerOf, summarizePartnerGifts } from "./partner-gifts";
 import FamilyFinance, { type FamilyFinanceData } from "./family-finance";
 
 type Role = "zcy" | "django";
@@ -11,6 +12,7 @@ type Kind =
   | "overview"
   | "income"
   | "large_expense"
+  | "partner_gift"
   | "child_expense"
   | "abnormal_month"
   | "gift"
@@ -46,6 +48,7 @@ const tabs: Array<{ id: Kind; label: string; mark: string; english: string }> = 
   { id: "overview", label: "首页", mark: "⌂", english: "HOME" },
   { id: "income", label: "收入", mark: "¥", english: "INCOME" },
   { id: "large_expense", label: "大额消费", mark: "★", english: "BIG BUY" },
+  { id: "partner_gift", label: "互赠礼物", mark: "♥", english: "FOR YOU" },
   { id: "child_expense", label: "小宝花费", mark: "♡", english: "KIDDO" },
   { id: "abnormal_month", label: "特别月份", mark: "!", english: "SPECIAL" },
   { id: "gift", label: "人情往来", mark: "✦", english: "GIFTS" },
@@ -56,6 +59,7 @@ const tabs: Array<{ id: Kind; label: string; mark: string; english: string }> = 
 const copy: Record<Exclude<Kind, "overview">, { title: string; description: string }> = {
   income: { title: "收入小口袋", description: "工资和额外收入各自收好，只给当前的你看。" },
   large_expense: { title: "大件愿望单", description: "每年六月开启新周期，当前的你有五万元预算慢慢花。" },
+  partner_gift: { title: "互赠礼物", description: "每人 ¥5,000 给对方买礼物；收到礼物的人来记，计入送礼人的额度。" },
   child_expense: { title: "小宝成长簿", description: "教育、医疗、兴趣和可爱的日常，都记在这里。" },
   abnormal_month: { title: "特别月份", description: "开销超过四千元的月份，留下一张小纸条。" },
   gift: { title: "人情小本本", description: "礼金、礼物、对象和场合，一个都不忘。" },
@@ -66,6 +70,7 @@ const copy: Record<Exclude<Kind, "overview">, { title: string; description: stri
 const categoryOptions: Record<LedgerKind, string[]> = {
   income: ["工资", "额外收入"],
   large_expense: ["家电", "旅行", "家居", "医疗", "其他"],
+  partner_gift: ["生日", "纪念日", "节日", "日常惊喜", "其他"],
   child_expense: ["教育", "医疗", "兴趣", "日常", "其他"],
   abnormal_month: ["大额购物", "旅行", "医疗", "临时事项", "其他"],
   gift: ["节庆", "生日", "婚礼", "探望", "其他"],
@@ -76,9 +81,12 @@ const roleNames: Record<Role, { name: string; english: string; initial: string }
   django: { name: "MJG", english: "MY LEDGER", initial: "M" },
 };
 
+const partnerRoleNames: Record<Role, string> = { zcy: "ZCY", django: "Django" };
+
 const mascotByPage: Record<Exclude<Kind, "overview">, { src: string; alt: string; note: string; second?: string }> = {
   income: { src: "/mascot-cutouts/01-playing-blocks.webp", alt: "可乐开心地玩积木", note: "一块一块，把小收入搭起来" },
   large_expense: { src: "/mascot-cutouts/05-playing-ball.webp", alt: "可乐开心地玩球", note: "大目标，也可以轻松慢慢来" },
+  partner_gift: { src: "/mascot-cutouts/06-bunny-tight-hug-v2.webp", alt: "可乐贴脸抱紧兔兔玩偶", note: "把心意送给你，把小惊喜记下来" },
   child_expense: { src: "/mascot-cutouts/06-bunny-tight-hug-v2.webp", alt: "可乐贴脸抱紧兔兔玩偶", note: "小宝的成长，每一笔都值得收藏" },
   abnormal_month: { src: "/mascot-cutouts/08-crying.webp", second: "/mascot-cutouts/09-angry.webp", alt: "可乐哭哭和生气的表情", note: "偶尔超支也没关系，记清楚就好" },
   gift: { src: "/mascot-cutouts/07-eating-cake.webp", alt: "可乐开心地吃蛋糕", note: "把甜甜的人情往来认真记住" },
@@ -157,10 +165,37 @@ function EntryOwner({
     return <span className={entry.payer === "mother" ? "payer mother" : "payer"}>{entry.payer === "mother" ? "妈妈支付" : "家庭支付"}</span>;
   }
 
+  if (entry.kind === "partner_gift" && entry.owner !== "family") {
+    return <span className="gift-direction">{partnerRoleNames[partnerOf(entry.owner)]} → {partnerRoleNames[entry.owner]}</span>;
+  }
+
   return entry.owner === "family" ? "我们家" : roleNames[entry.owner].name;
 }
 
-export default function LedgerApp({ initialFinance, initialRole }: { initialFinance: FamilyFinanceData | null; initialRole: Role | null }) {
+function PartnerGiftSummary({ budgets, cycleLabel, loading, role }: {
+  budgets: ReturnType<typeof summarizePartnerGifts>;
+  cycleLabel: string;
+  loading: boolean;
+  role: Role;
+}) {
+  return <div className="partner-gift-summary">
+    <div className="partner-gift-rule"><span>本周期 {cycleLabel}</span><span>独立额度 · 收礼人记账</span></div>
+    <div className="partner-budget-grid" aria-label="两个人的送礼额度">
+      {(["zcy", "django"] as Role[]).map((giver) => {
+        const budget = budgets[giver];
+        return <div className={giver === role ? "partner-budget mine" : "partner-budget"} key={giver}>
+          <span>{partnerRoleNames[giver]} 送给 {partnerRoleNames[partnerOf(giver)]}{giver === role && <em>我的送礼额度</em>}</span>
+          <strong>{loading ? "—" : money(budget.spentCents)}<small> / ¥5,000</small></strong>
+          <progress aria-label={`${partnerRoleNames[giver]} 已使用送礼额度`} max={PARTNER_GIFT_BUDGET_CENTS} value={Math.min(budget.spentCents, PARTNER_GIFT_BUDGET_CENTS)} />
+          <div><b className={budget.overBudgetCents ? "danger" : "healthy"}>{budget.overBudgetCents ? `超出 ${money(budget.overBudgetCents)}` : `剩余 ${loading ? "—" : money(budget.remainingCents)}`}</b><small>{budget.count} 份礼物</small></div>
+        </div>;
+      })}
+    </div>
+    <p>你是 {partnerRoleNames[role]}，请记录 {partnerRoleNames[partnerOf(role)]} 送给你的礼物；对方记录你送出的礼物。</p>
+  </div>;
+}
+
+export default function LedgerApp({ initialFinance, initialRole, localPreview = false }: { initialFinance: FamilyFinanceData | null; initialRole: Role | null; localPreview?: boolean }) {
   const [active, setActive] = useState<Kind>("overview");
   const [role, setRole] = useState<Role>(initialRole ?? "zcy");
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -178,14 +213,17 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
   const [assigningId, setAssigningId] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
   const [kindToAdd, setKindToAdd] = useState<LedgerKind>("income");
+  const [partnerGiftScope, setPartnerGiftScope] = useState("cycle");
   const [greeting, setGreeting] = useState("今天也要把小日子记得明明白白！");
   const today = new Date().toISOString().slice(0, 10);
 
-  async function load({ allowUnauthenticated = false }: { allowUnauthenticated?: boolean } = {}) {
-    setLoading(true);
-    setNotice("");
+  async function load({ allowUnauthenticated = false, quiet = false }: { allowUnauthenticated?: boolean; quiet?: boolean } = {}) {
+    if (!quiet) {
+      setLoading(true);
+      setNotice("");
+    }
     try {
-      const response = await fetch(withBasePath("/api/ledger"));
+      const response = await fetch(withBasePath("/api/ledger"), { cache: "no-store" });
       const data = (await response.json()) as { entries?: Entry[]; role?: Role; error?: string };
       if (!response.ok) {
         if (allowUnauthenticated && (response.status === 401 || response.status === 403)) return false;
@@ -195,10 +233,10 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
       if (data.role) setRole(data.role);
       return true;
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "读取账本失败");
+      if (!quiet) setNotice(error instanceof Error ? error.message : "读取账本失败");
       return false;
     } finally {
-      setLoading(false);
+      if (!quiet) setLoading(false);
     }
   }
 
@@ -284,7 +322,20 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
     };
   }, [authenticated]);
 
+  useEffect(() => {
+    if (!authenticated || !["overview", "large_expense", "partner_gift"].includes(active)) return;
+    const refresh = () => { if (document.visibilityState === "visible") void load({ quiet: true }); };
+    window.addEventListener("focus", refresh);
+    const timer = window.setInterval(refresh, 15_000);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      window.clearInterval(timer);
+    };
+  }, [authenticated, active]);
+
   const cycle = currentCycle();
+  const partnerBudgets = summarizePartnerGifts(entries, cycle);
+  const myPartnerBudget = partnerBudgets[role];
   const largeEntries = entries.filter(
     (entry) =>
       entry.kind === "large_expense" &&
@@ -308,18 +359,17 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
   const projectsSpent = familyFinance.totals?.projectSpentCents
     ?? familyFinance.expenses.reduce((sum, item) => sum + item.amountCents, 0);
 
-  const visibleEntries = useMemo(() => {
-    const entriesVisibleToRole = entries.filter(
+  const entriesVisibleToRole = entries.filter(
       (entry) =>
         entry.kind !== "large_expense" ||
         entry.owner === role ||
         entry.owner === "family",
     );
 
-    return active === "overview"
+  const visibleEntries = active === "overview"
       ? entriesVisibleToRole.slice(0, 4)
-      : entriesVisibleToRole.filter((entry) => entry.kind === active);
-  }, [active, entries, role]);
+      : entriesVisibleToRole.filter((entry) => entry.kind === active
+        && (active !== "partner_gift" || partnerGiftScope === "all" || (entry.entryDate >= cycle.start && entry.entryDate <= cycle.end)));
 
   function navigateTo(next: Kind) {
     if (next === active && !modalOpen) return;
@@ -334,6 +384,7 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
     setEditingId(null);
     setNotice("");
     if (next === "savings" || next === "projects") void loadFamilyFinance();
+    if (next === "partner_gift") void load({ quiet: true });
   }
 
   function openAdd(kind?: LedgerKind) {
@@ -347,6 +398,7 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
   }
 
   function openEdit(entry: Entry) {
+    if (entry.kind === "partner_gift" && entry.owner !== role) return;
     window.history.pushState({ ledgerView: true, active, modal: entry.kind, editId: entry.id } satisfies LedgerHistoryState, "");
     setKindToAdd(entry.kind);
     setEditingId(entry.id);
@@ -552,7 +604,7 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
       <section className={active === "overview" ? "content content-overview" : "content content-detail"} id="ledger-content">
         <header className="topbar">
           <div>
-            <p className="eyebrow">COLA&apos;S TINY LEDGER · 小日子收藏所</p>
+            <p className="eyebrow">COLA&apos;S TINY LEDGER · 小日子收藏所{localPreview && <span className="preview-marker">本地验收 · 示例账库 · 未上线</span>}</p>
             <h1>{activeMeta?.title ?? greeting}</h1>
             <p className="subtitle">{activeMeta?.description ?? `嗨，${currentRole.name}！把每一笔都变成可爱的生活碎片。`}</p>
           </div>
@@ -561,7 +613,7 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
               <button onClick={() => navigateTo("savings")} type="button"><span>¥</span><div><small>家庭存款</small><strong>{money(savingsTotal)}</strong></div></button>
               <button onClick={() => navigateTo("projects")} type="button"><span>⌂</span><div><small>大额专项</small><strong>{money(projectsSpent)}</strong></div></button>
             </div>}
-            {active !== "savings" && active !== "projects" && <button className="primary-button" onClick={() => openAdd()} type="button"><span>＋</span> 记一笔</button>}
+            {active !== "savings" && active !== "projects" && <button className="primary-button" onClick={() => openAdd()} type="button"><span>＋</span> {active === "partner_gift" ? "记一份收礼" : "记一笔"}</button>}
           </div>
         </header>
 
@@ -584,7 +636,13 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
 
             <div className="metric-grid">
               <article className="metric-card red"><span>MY INCOME</span><strong>{money(incomeThisYear)}</strong><small>{currentRole.name}今年的收入</small><b className="metric-stamp">01</b></article>
-              <article className="metric-card cream"><span>BIG BUY</span><strong>{money(largeUsed)}</strong><small>还可以花 {money(Math.max(5_000_000 - largeUsed, 0))}</small><b className="metric-stamp">02</b></article>
+              <article className="metric-card cream">
+                <span>BIG BUY</span><strong>{money(largeUsed)}</strong><small>还可以花 {money(Math.max(5_000_000 - largeUsed, 0))}</small>
+                <button className="partner-gift-link" onClick={() => navigateTo("partner_gift")} type="button" aria-label="查看互赠礼物额度和明细">
+                  <span>♥ 互赠礼物</span><strong>{loading ? "—" : money(myPartnerBudget.spentCents)} / ¥5,000</strong><span aria-hidden="true">↗</span>
+                </button>
+                <b className="metric-stamp">02</b>
+              </article>
               <article className="metric-card blue child-metric">
                 <span>小宝今年花费</span>
                 <strong>{loading ? "—" : money(childThisYear)}</strong>
@@ -611,7 +669,7 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
                   <img src={withBasePath("/mascot-cutouts/03-drawing-playful-v2.webp")} alt="" height={720} loading="lazy" width={720} />
                 </div>
                 <div className="quick-grid">
-                  {tabs.slice(2, 6).map((tab) => <button key={tab.id} onClick={() => openAdd(tab.id as LedgerKind)} type="button"><span>{tab.mark}</span><strong>{tab.label}</strong><small>{tab.english}</small></button>)}
+                  {tabs.filter((tab) => ["large_expense", "child_expense", "abnormal_month", "gift"].includes(tab.id)).map((tab) => <button key={tab.id} onClick={() => openAdd(tab.id as LedgerKind)} type="button"><span>{tab.mark}</span><strong>{tab.label}</strong><small>{tab.english}</small></button>)}
                 </div>
               </section>
             </div>
@@ -621,10 +679,12 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
         {(active === "savings" || active === "projects") && <FamilyFinance data={familyFinance} onChange={loadFamilyFinance} view={active} />}
 
         {activeMascot && active !== "savings" && active !== "projects" && (
-          <section className="page-banner">
+          <section className={active === "partner_gift" ? "page-banner partner-banner" : "page-banner"}>
             <div>
-              <span className="section-kicker">COLA&apos;S LITTLE MOMENT</span>
-              <strong>{activeMascot.note}</strong>
+              {active === "partner_gift" ? <PartnerGiftSummary budgets={partnerBudgets} cycleLabel={cycle.label} loading={loading} role={role} /> : <>
+                <span className="section-kicker">COLA&apos;S LITTLE MOMENT</span>
+                <strong>{activeMascot.note}</strong>
+              </>}
             </div>
             <div className="page-banner-art">
               <img src={withBasePath(activeMascot.src)} alt={activeMascot.alt} height={720} width={720} />
@@ -636,8 +696,15 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
         {active !== "savings" && active !== "projects" && <section className={active === "overview" ? "panel records-panel overview-records" : "panel records-panel"}>
           <div className="panel-head records-head">
             <div><span className="section-kicker">{active === "overview" ? "RECENT NOTES" : "ALL NOTES"}</span><h2>{active === "overview" ? "最近的小账目" : `${activeMeta?.title}记录`}</h2></div>
-            {active !== "overview" && <button className="outline-button" onClick={() => openAdd()} type="button">＋ 新增</button>}
+            {active !== "overview" && <button className="outline-button" onClick={() => openAdd()} type="button">{active === "partner_gift" ? "＋ 记一份收礼" : "＋ 新增"}</button>}
           </div>
+          {(active === "large_expense" || active === "partner_gift") && (
+            <nav className="expense-sections" aria-label="大额消费子板块">
+              <button aria-pressed={active === "large_expense"} onClick={() => navigateTo("large_expense")} type="button">个人大额 <span>¥50,000</span></button>
+              <button aria-pressed={active === "partner_gift"} onClick={() => navigateTo("partner_gift")} type="button">♥ 互赠礼物 <span>每人 ¥5,000</span></button>
+              {active === "partner_gift" && <select aria-label="互赠礼物记录范围" onChange={(event) => setPartnerGiftScope(event.target.value)} value={partnerGiftScope}><option value="cycle">本周期记录</option><option value="all">全部历史记录</option></select>}
+            </nav>
+          )}
           {active === "large_expense" && pendingLargeEntries.length > 0 && (
             <div className="ownership-summary">
               <strong>{pendingLargeEntries.length} 条历史记录仍在</strong>
@@ -668,7 +735,7 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
                     <th>DATE</th>
                     <th>今天发生什么</th>
                     <th>分类贴纸</th>
-                    <th>{active === "child_expense" ? "谁支付" : "是谁的"}</th>
+                    <th>{active === "partner_gift" ? "送礼 → 收礼" : active === "child_expense" ? "谁支付" : "是谁的"}</th>
                     <th>从哪里来</th>
                     <th className="amount">金额</th>
                     <th>操作</th>
@@ -698,6 +765,7 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
                       </td>
                       <td className="amount">{money(entry.amountCents)}</td>
                       <td>
+                        {entry.kind === "partner_gift" && entry.owner !== role ? <span className="recipient-only">由收礼人修改</span> : <>
                         <button
                           aria-label={`修改 ${entry.title}`}
                           className="edit-button"
@@ -714,6 +782,7 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
                         >
                           ×
                         </button>
+                        </>}
                       </td>
                     </tr>
                   ))}
@@ -731,16 +800,17 @@ export default function LedgerApp({ initialFinance, initialRole }: { initialFina
             <form key={editingEntry?.id ?? `new-${kindToAdd}`} onSubmit={saveEntry}>
               <input name="kind" type="hidden" value={kindToAdd} />
               <div className="form-grid">
+                {kindToAdd === "partner_gift" && <div className="gift-form-context" role="note"><strong>{partnerRoleNames[partnerOf(role)]} → {partnerRoleNames[role]}（我）</strong><span>我作为收礼人记账，计入 {partnerRoleNames[partnerOf(role)]} 的送礼额度；不占用个人大额消费额度。</span></div>}
                 <Field label="日期"><input defaultValue={editingEntry?.entryDate ?? today} name="entryDate" required type="date" /></Field>
                 {kindToAdd === "abnormal_month" && <Field label="信用卡自然月"><input defaultValue={editingEntry?.month ?? today.slice(0, 7)} name="month" required type="month" /></Field>}
-                <Field label={kindToAdd === "gift" ? "送礼人 / 对象" : "项目"}><input defaultValue={editingEntry?.title ?? ""} name="title" placeholder={kindToAdd === "income" ? "例如：这个月的工资" : "给这笔小账起个名字"} required /></Field>
+                <Field label={kindToAdd === "partner_gift" ? "收到的礼物" : kindToAdd === "gift" ? "送礼人 / 对象" : "项目"}><input defaultValue={editingEntry?.title ?? ""} name="title" placeholder={kindToAdd === "partner_gift" ? "例如：生日耳机、纪念日手链" : kindToAdd === "income" ? "例如：这个月的工资" : "给这笔小账起个名字"} required /></Field>
                 <Field label="金额（元）"><input defaultValue={editingEntry ? editingEntry.amountCents / 100 : ""} min={kindToAdd === "large_expense" ? undefined : "0"} name="amount" placeholder="0.00" required step="0.01" type="number" /></Field>
                 <Field label="分类"><select defaultValue={editingEntry?.category ?? formCategories[0]} name="category">{formCategories.map((category) => <option key={category}>{category}</option>)}</select></Field>
                 {kindToAdd === "child_expense" && <Field label="付款人"><select defaultValue={editingEntry?.payer ?? "family"} name="payer"><option value="family">家庭支付</option><option value="mother">妈妈支付</option></select></Field>}
                 {kindToAdd === "gift" && <Field label="形式"><select defaultValue={editingEntry?.giftType ?? "礼金"} name="giftType"><option>礼金</option><option>礼物</option><option>礼金＋礼物</option></select></Field>}
                 <Field label="备注" wide><textarea defaultValue={editingEntry?.detail ?? ""} name="detail" placeholder="写下原因、场合，或者一句可爱的小备注" rows={3} /></Field>
               </div>
-              <div className="form-foot"><span>{kindToAdd === "income" || kindToAdd === "large_expense" ? `会收进 ${currentRole.name} 的私人小口袋` : "会收进我们的家庭共享账本"}</span><div><button className="cancel-button" onClick={closeModal} type="button">等等再记</button><button className="primary-button" disabled={saving} type="submit">{saving ? "正在保存…" : editingEntry ? "保存修改" : "好啦，保存！"}</button></div></div>
+              <div className="form-foot"><span>{kindToAdd === "partner_gift" ? "双方可见，由收礼人维护；每年六月开启新额度" : kindToAdd === "income" || kindToAdd === "large_expense" ? `会收进 ${currentRole.name} 的私人小口袋` : "会收进我们的家庭共享账本"}</span><div><button className="cancel-button" onClick={closeModal} type="button">等等再记</button><button className="primary-button" disabled={saving} type="submit">{saving ? "正在保存…" : editingEntry ? "保存修改" : "好啦，保存！"}</button></div></div>
             </form>
           </section>
         </div>

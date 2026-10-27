@@ -53,6 +53,16 @@ test('preserves genuine repeated identical rows as a multiset', () => {
   assert.equal(plan.counts.ledger_entries.matched, 1);
   assert.equal(plan.counts.ledger_entries.added, 1);
 });
+
+test('backs up and restores mutual gifts with their recipient ownership', () => {
+  const source = snapshot({ ledger_entries: [ledger(1, { kind: 'partner_gift', owner: 'zcy', created_by_role: 'zcy' }), ledger(2, { kind: 'partner_gift', owner: 'django', created_by_role: 'django' })] });
+  const target = snapshot();
+  const plan = planMerge(source, target);
+  assert.equal(plan.conflicts.length, 0);
+  assert.equal(plan.counts.ledger_entries.added, 2);
+  assert.deepEqual(plan.operations.map(operation => operation.row.owner).sort(), ['django', 'zcy']);
+  assert.throws(() => snapshot({ ledger_entries: [ledger(3, { kind: 'partner_gift', owner: 'family' })] }));
+});
 test('source key changes, weak identity edits and account differences block the entire batch', () => {
   for (const [source, target] of [
     [snapshot({ ledger_entries: [ledger(1, { source_key: 'feishu-1' })] }), snapshot({ ledger_entries: [ledger(8, { source_key: 'feishu-1', amount_cents: 200 })] })],

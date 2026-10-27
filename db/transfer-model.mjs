@@ -53,7 +53,8 @@ export function validateSnapshot(input) {
       if (ids.has(row.id)) throw new Error(`${table} 有重复记录编号。`);
       ids.add(row.id);
       if (table === 'ledger_entries') {
-        if (!['zcy', 'django', 'family'].includes(row.owner) || !['income', 'large_expense', 'child_expense', 'abnormal_month', 'gift'].includes(row.kind) || !['family', 'mother'].includes(row.payer)) throw new Error('账目归属或类型无效。');
+        if (!['zcy', 'django', 'family'].includes(row.owner) || !['income', 'large_expense', 'partner_gift', 'child_expense', 'abnormal_month', 'gift'].includes(row.kind) || !['family', 'mother'].includes(row.payer)) throw new Error('账目归属或类型无效。');
+        if (row.kind === 'partner_gift' && !['zcy', 'django'].includes(row.owner)) throw new Error('互赠礼物必须归属具体收礼人。');
         if (row.source_key !== null) {
           if (!row.source_key || sourceKeys.has(row.source_key)) throw new Error('账目来源编号重复或为空。');
           sourceKeys.add(row.source_key);

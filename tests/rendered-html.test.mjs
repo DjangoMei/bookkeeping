@@ -207,8 +207,8 @@ test("hydrates the authenticated role before client-side history restores the le
 
   assert.match(page, /export const dynamic = "force-dynamic"/);
   assert.match(page, /getSessionRoleFromCookieHeader/);
-  assert.match(page, /<LedgerApp initialFinance=\{initialFinance\} initialRole=\{initialRole\} \/>/);
-  assert.match(client, /function LedgerApp\(\{ initialFinance, initialRole \}/);
+  assert.match(page, /<LedgerApp initialFinance=\{initialFinance\} initialRole=\{initialRole\}/);
+  assert.match(client, /function LedgerApp\(\{ initialFinance, initialRole/);
   assert.match(client, /useState<Role>\(initialRole \?\? "zcy"\)/);
   assert.match(client, /useState\(initialRole !== null\)/);
   assert.match(auth, /getSessionRoleFromCookieHeader/);

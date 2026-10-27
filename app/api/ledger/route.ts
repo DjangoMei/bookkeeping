@@ -1,4 +1,4 @@
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, ne, or } from "drizzle-orm";
 import { ensureLedgerSchema, getDb } from "../../../db";
 import { ledgerEntries } from "../../../db/schema";
 import { getSessionRole } from "../../auth-session";
@@ -6,6 +6,7 @@ import { getSessionRole } from "../../auth-session";
 type EntryKind =
   | "income"
   | "large_expense"
+  | "partner_gift"
   | "child_expense"
   | "abnormal_month"
   | "gift";
@@ -13,6 +14,7 @@ type EntryKind =
 const VALID_KINDS = new Set<EntryKind>([
   "income",
   "large_expense",
+  "partner_gift",
   "child_expense",
   "abnormal_month",
   "gift",
@@ -44,11 +46,17 @@ export async function GET(request: Request) {
         or(
           eq(ledgerEntries.owner, "family"),
           eq(ledgerEntries.owner, role),
+          eq(ledgerEntries.kind, "partner_gift"),
         ),
       )
       .orderBy(desc(ledgerEntries.entryDate), desc(ledgerEntries.id));
 
-    return Response.json({ entries, role });
+    return Response.json({ entries, role }, {
+      headers: {
+        "Cache-Control": "private, no-store, max-age=0, must-revalidate",
+        Vary: "Cookie",
+      },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "读取账本失败";
     return Response.json({ error: message }, { status: 500 });
@@ -78,8 +86,9 @@ export async function POST(request: Request) {
       return Response.json({ error: "请完整填写日期、项目和金额" }, { status: 400 });
     }
 
-    const owner =
-      kind === "income" || kind === "large_expense" ? role : "family";
+    const owner = kind === "partner_gift"
+      ? role
+      : kind === "income" || kind === "large_expense" ? role : "family";
     const month =
       kind === "abnormal_month"
         ? cleanText(payload.month, 7) || entryDate.slice(0, 7)
@@ -176,7 +185,9 @@ export async function PATCH(request: Request) {
         and(
           eq(ledgerEntries.id, id),
           eq(ledgerEntries.kind, kind),
-          or(eq(ledgerEntries.owner, role), eq(ledgerEntries.owner, "family")),
+          kind === "partner_gift"
+            ? eq(ledgerEntries.owner, role)
+            : or(eq(ledgerEntries.owner, role), eq(ledgerEntries.owner, "family")),
         ),
       )
       .returning();
@@ -206,17 +217,19 @@ export async function DELETE(request: Request) {
   try {
     await ensureLedgerSchema();
     const db = getDb();
-    await db
+    const [deleted] = await db
       .delete(ledgerEntries)
       .where(
         and(
           eq(ledgerEntries.id, id),
           or(
             eq(ledgerEntries.owner, role),
-            eq(ledgerEntries.owner, "family"),
+            and(eq(ledgerEntries.owner, "family"), ne(ledgerEntries.kind, "partner_gift")),
           ),
         ),
-      );
+      )
+      .returning({ id: ledgerEntries.id });
+    if (!deleted) return Response.json({ error: "记录不存在或只能由收礼人删除" }, { status: 404 });
     return Response.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "删除失败";

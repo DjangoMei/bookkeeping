@@ -382,10 +382,38 @@ h1, h2, .brand strong, .login-brand strong, .metric-card > strong, .page-banner 
 .metric-card small { display: block; position: relative; z-index: 1; margin-top: 9px; color: inherit; opacity: .65; font-size: 9px; }
 .metric-stamp { position: absolute; right: -8px; bottom: -22px; color: rgba(129,38,49,.12); font: 900 74px var(--comic); transform: rotate(-8deg); }
 .metric-card.red .metric-stamp { color: rgba(255,249,233,.13); }
-.child-total-link { position: relative; z-index: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 3px 6px; margin-top: 7px; padding: 4px 7px; max-width: 100%; color: var(--red-dark); background: rgba(255,252,244,.72); border: 1px solid rgba(129,38,49,.25); border-radius: 8px; cursor: pointer; font-size: 10px; text-align: left; }
-.child-total-link strong { font-size: 11px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.child-total-link:hover { background: var(--paper); }
-.child-total-link:focus-visible { outline: 2px solid var(--red-dark); outline-offset: 3px; }
+.child-total-link, .partner-gift-link { position: relative; z-index: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 3px 6px; margin-top: 7px; padding: 4px 7px; max-width: 100%; color: var(--red-dark); background: rgba(255,252,244,.72); border: 1px solid rgba(129,38,49,.25); border-radius: 8px; cursor: pointer; font-size: 10px; text-align: left; }
+.child-total-link strong, .partner-gift-link strong { font-size: 11px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.child-total-link:hover, .partner-gift-link:hover { background: var(--paper); }
+.child-total-link:focus-visible, .partner-gift-link:focus-visible { outline: 2px solid var(--red-dark); outline-offset: 3px; }
+.partner-gift-link { background: rgba(164,204,222,.28); }
+.preview-marker { display: inline-block; margin-left: 8px; padding: 3px 6px; color: var(--cream); background: var(--red); border-radius: 5px; font-size: 8px; font-weight: 700; letter-spacing: 0; vertical-align: middle; }
+.expense-sections { flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding: 0 18px 12px; }
+.expense-sections button { cursor: pointer; padding: 7px 12px; color: var(--red-dark); background: var(--cream); border: 1px solid var(--line); border-radius: 10px; font-size: 11px; font-weight: 800; }
+.expense-sections button span { margin-left: 5px; font-size: 10px; font-weight: 600; }
+.expense-sections button[aria-pressed="true"] { color: var(--cream); background: var(--red); border-color: var(--red); }
+.expense-sections select { margin-left: auto; max-width: 100%; padding: 6px 9px; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 9px; font: inherit; font-size: 10px; }
+.partner-gift-summary { flex: 0 0 auto; padding: 12px 18px; background: var(--cream-deep); border-top: 1px dashed var(--line); }
+.partner-gift-rule { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 5px; color: var(--muted); font-size: 10px; }
+.partner-budget-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 9px; }
+.partner-budget { min-width: 0; padding: 10px 13px; border: 1px solid var(--line); border-radius: 13px; background: var(--paper); }
+.partner-budget.mine { background: #e1eff4; }
+.partner-budget > span { display: flex; align-items: center; justify-content: space-between; gap: 5px; color: var(--red-dark); font-size: 11px; font-weight: 800; }
+.partner-budget em { padding: 2px 5px; background: rgba(255,252,244,.85); border-radius: 5px; font-size: 8px; font-style: normal; font-weight: 600; }
+.partner-budget > strong { display: block; margin-top: 6px; color: var(--red-dark); font-size: clamp(19px,1.9vw,26px); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.partner-budget strong small { color: var(--muted); font-size: 11px; font-weight: 600; }
+.partner-budget progress { appearance: none; display: block; width: 100%; height: 6px; margin: 8px 0; overflow: hidden; border: 0; border-radius: 5px; background: #e9dfce; accent-color: var(--red); }
+.partner-budget progress::-webkit-progress-bar { border-radius: 5px; background: #e9dfce; }
+.partner-budget progress::-webkit-progress-value { border-radius: 5px; background: var(--red); }
+.partner-budget progress::-moz-progress-bar { border-radius: 5px; background: var(--red); }
+.partner-budget > div { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.partner-budget > div b { font-size: 10px; }
+.partner-budget > div small, .recipient-only { color: var(--muted); font-size: 9px; }
+.partner-gift-summary > p { margin: 8px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.gift-direction { color: var(--red-dark); font-size: 10px; font-weight: 700; white-space: nowrap; }
+.gift-form-context { grid-column: 1 / -1; display: grid; gap: 5px; padding: 12px 14px; background: #e1eff4; border: 1px solid var(--line); border-radius: 12px; }
+.gift-form-context strong { color: var(--red-dark); font-size: 15px; }
+.gift-form-context span { color: var(--muted); font-size: 11px; line-height: 1.5; }
 
 .top-actions { display: flex; align-items: center; gap: 9px; }
 .family-shortcuts { display: flex; gap: 7px; }
@@ -640,6 +668,27 @@ td strong, td small { overflow-wrap: anywhere; }
 .page-banner-art img { position: static; width: auto; height: 100%; max-width: 100%; max-height: 100%; object-fit: contain; object-position: center; filter: drop-shadow(4px 5px 0 rgba(129,38,49,.1)); }
 .page-banner-art:has(.page-banner-second) img { width: calc(50% - 3px); height: 100%; }
 .page-banner-art .page-banner-second { transform: none; }
+.page-banner.partner-banner { grid-template-columns: minmax(0,1fr) minmax(100px,18%); padding: 12px 18px; }
+.partner-banner .partner-gift-summary { padding: 0; border: 0; background: transparent; }
+.partner-banner .partner-budget { padding: 8px 12px; }
+.partner-banner .partner-budget > strong { margin-top: 4px; font-size: clamp(19px,1.8vw,25px); line-height: 1.15; }
+.partner-banner .partner-budget progress { margin: 6px 0; }
+.partner-banner .partner-gift-summary > p { margin-top: 6px; }
+.metric-card:has(.partner-gift-link), .metric-card.child-metric { padding-top: 11px; padding-bottom: 10px; }
+.metric-card:has(.partner-gift-link) > span, .metric-card.child-metric > span { margin-bottom: 4px; }
+.metric-card:has(.partner-gift-link) small, .metric-card.child-metric small { margin-top: 4px; }
+.metric-card .partner-gift-link, .metric-card .child-total-link { margin-top: 4px; padding: 2px 6px; font-size: 9px; }
+.metric-card .partner-gift-link strong, .metric-card .child-total-link strong { font-size: 10px; }
+
+@media (min-width: 781px) {
+  .sidebar nav .nav-item { padding-top: 7px; padding-bottom: 7px; }
+}
+
+@media (min-width: 781px) and (max-height: 780px) {
+  .sidebar-mascot { min-height: 86px; }
+  .sidebar-mascot img { height: 80px; }
+  .account { margin-top: 8px; padding-top: 7px; }
+}
 
 @media (max-width: 1100px) {
   html, body { height: auto; overflow: auto; }
@@ -732,6 +781,17 @@ td strong, td small { overflow-wrap: anywhere; }
   .ownership-summary { align-items: flex-start; flex-direction: column; padding: 10px 16px; }
   .child-totals { grid-template-columns: repeat(2,minmax(0,1fr)); padding: 12px 16px; }
   .child-totals > div:first-child { grid-column: 1 / -1; }
+  .partner-budget-grid { gap: 7px; }
+  .partner-budget { padding: 9px; }
+  .partner-budget > span { align-items: flex-start; flex-direction: column; }
+  .partner-budget > strong { font-size: 19px; }
+  .partner-budget > div { align-items: flex-start; flex-direction: column; }
+  .expense-sections { padding: 0 16px 10px; }
+  .expense-sections button { padding: 7px 9px; }
+  .expense-sections select { margin-left: 0; }
+  .page-banner.partner-banner { grid-template-columns: minmax(0,1fr); min-height: 0; padding: 14px 16px; }
+  .partner-banner .page-banner-art { position: absolute; top: 8px; right: 12px; width: 42px; height: 42px; }
+  .partner-banner .partner-gift-rule { padding-right: 44px; }
   .empty { flex-direction: column; text-align: center; }
   .account-grid { grid-template-columns: 1fr; }
   .project-numbers { grid-template-columns: 1fr; }
