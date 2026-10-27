@@ -175,6 +175,11 @@ test("uses the offering-rose cutout for mutual gifts without replacing the child
   assert.match(client, /child_expense: \{ src: "\/mascot-cutouts\/06-bunny-tight-hug-v2\.webp"/);
 });
 
+test("centers the mutual-gifts illustration within its empty banner column", async () => {
+  const css = await readFile(new URL("app/globals.css", projectRoot), "utf8");
+  assert.match(css, /\.partner-banner \.page-banner-art\s*\{\s*justify-content:\s*center;\s*\}/);
+});
+
 test("uses a clear rounded square system font without decorative webfonts", async () => {
   const css = await readFile(new URL("app/globals.css", projectRoot), "utf8");
 

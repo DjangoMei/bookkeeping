@@ -669,6 +669,7 @@ td strong, td small { overflow-wrap: anywhere; }
 .page-banner-art:has(.page-banner-second) img { width: calc(50% - 3px); height: 100%; }
 .page-banner-art .page-banner-second { transform: none; }
 .page-banner.partner-banner { grid-template-columns: minmax(0,1fr) minmax(100px,18%); padding: 12px 18px; }
+.partner-banner .page-banner-art { justify-content: center; }
 .partner-banner .partner-gift-summary { padding: 0; border: 0; background: transparent; }
 .partner-banner .partner-budget { padding: 8px 12px; }
 .partner-banner .partner-budget > strong { margin-top: 4px; font-size: clamp(19px,1.8vw,25px); line-height: 1.15; }
