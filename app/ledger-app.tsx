@@ -86,7 +86,7 @@ const partnerRoleNames: Record<Role, string> = { zcy: "ZCY", django: "Django" };
 const mascotByPage: Record<Exclude<Kind, "overview">, { src: string; alt: string; note: string; second?: string }> = {
   income: { src: "/mascot-cutouts/01-playing-blocks.webp", alt: "可乐开心地玩积木", note: "一块一块，把小收入搭起来" },
   large_expense: { src: "/mascot-cutouts/05-playing-ball.webp", alt: "可乐开心地玩球", note: "大目标，也可以轻松慢慢来" },
-  partner_gift: { src: "/mascot-cutouts/06-bunny-tight-hug-v2.webp", alt: "可乐贴脸抱紧兔兔玩偶", note: "把心意送给你，把小惊喜记下来" },
+  partner_gift: { src: "/mascot-cutouts/10-offering-rose.webp", alt: "小宝呆萌地向前递出一支玫瑰", note: "把心意送给你，把小惊喜记下来" },
   child_expense: { src: "/mascot-cutouts/06-bunny-tight-hug-v2.webp", alt: "可乐贴脸抱紧兔兔玩偶", note: "小宝的成长，每一笔都值得收藏" },
   abnormal_month: { src: "/mascot-cutouts/08-crying.webp", second: "/mascot-cutouts/09-angry.webp", alt: "可乐哭哭和生气的表情", note: "偶尔超支也没关系，记清楚就好" },
   gift: { src: "/mascot-cutouts/07-eating-cake.webp", alt: "可乐开心地吃蛋糕", note: "把甜甜的人情往来认真记住" },

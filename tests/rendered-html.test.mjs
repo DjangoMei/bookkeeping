@@ -161,11 +161,18 @@ test("uses transparent Cola artwork across every ledger page", async () => {
     "07-eating-cake.webp",
     "08-crying.webp",
     "09-angry.webp",
+    "10-offering-rose.webp",
   ];
 
   await Promise.all(cutouts.map((name) => access(new URL(`public/mascot-cutouts/${name}`, projectRoot))));
   for (const name of cutouts) assert.match(client, new RegExp(name.replaceAll(".", "\\.")));
   assert.doesNotMatch(client, /\/mascot-scenes\//);
+});
+
+test("uses the offering-rose cutout for mutual gifts without replacing the child's bunny", async () => {
+  const client = await readFile(new URL("app/ledger-app.tsx", projectRoot), "utf8");
+  assert.match(client, /partner_gift: \{ src: "\/mascot-cutouts\/10-offering-rose\.webp", alt: "小宝呆萌地向前递出一支玫瑰"/);
+  assert.match(client, /child_expense: \{ src: "\/mascot-cutouts\/06-bunny-tight-hug-v2\.webp"/);
 });
 
 test("uses a clear rounded square system font without decorative webfonts", async () => {
